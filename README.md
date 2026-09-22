@@ -2,10 +2,10 @@
   <img src="docs/assets/gor-logo.png" width="520" alt="GoR logo">
 </p>
 
-<h1 align="center">Go REST</h1>
+<h1 align="center">Go Nature in REST</h1>
 
 <p align="center">
-  <strong>Write Go naturally. Keep business handlers pure.</strong><br>
+  <strong>Write REST naturally. Keep business handlers pure.</strong><br>
   GoR handles the HTTP boundary without changing how application code feels.
 </p>
 
