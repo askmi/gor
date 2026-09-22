@@ -96,7 +96,7 @@ func RunServer() {
 
 func RunClient() {
 	client := goc.NewClient(goc.NewClientOpts().
-		WithTimeout(0))
+		WithTimeout(0)...)
 	ch := make(chan struct{})
 	r, w := io.Pipe()
 	go func() {

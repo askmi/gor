@@ -140,10 +140,10 @@ func Merge[E ~[]T, T any](e ...E) E {
 	return opts
 }
 
-func WithOption[E ~[]T, T any](options E, option T) E {
-	result := make(E, len(options), len(options)+1)
-	copy(result, options)
-	return append(result, option)
+func WithElement[E ~[]T, T any](a E, e T) E {
+	result := make(E, len(a), len(a)+1)
+	copy(result, a)
+	return append(result, e)
 }
 
 //************************************************
