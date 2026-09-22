@@ -61,6 +61,7 @@ Your function does not import GoR or implement a framework interface. Go infers 
   - [Application resource management](#application-resource-management)
   - [OpenTelemetry integration](#opentelemetry-integration)
   - [HTTP resilience](#http-resilience)
+  - [HTTP client and connection pool](#http-client-and-connection-pool)
   - [Production security](#production-security)
 - [Project layout](#project-layout)
 - [Example project](#example-project)
@@ -658,7 +659,7 @@ client := goc.NewClient(
 )
 ```
 
-That is the whole integration. `otelhttp`'s round tripper starts a client span from the request context and injects the headers with the globally registered propagator, so the downstream service continues the trace. Build requests with the context that carries the span:
+That is the whole integration. `otelhttp`'s round tripper starts a client span from the request context and injects the headers with the globally registered propagator, so the downstream service continues the trace. Replace `http.DefaultTransport` with a `goc.NewTransport(...)` when the client needs its own pool settings, as in [HTTP client and connection pool](#http-client-and-connection-pool). Build requests with the context that carries the span:
 
 ```go
 req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -752,6 +753,62 @@ engine := gor.NewEngine(serverOpts...)
 ```
 
 TLS remains application- or ingress-managed until engine TLS configuration is implemented.
+
+### HTTP client and connection pool
+
+Outbound calls use `pkg/client`, which configures `*http.Client` in the same two forms as the engine. Client settings are split across two standard types: `*http.Client` holds per-request policy, `*http.Transport` holds the connection pool and everything about establishing a connection. `ClientOpts` covers the first, `TransportOpts` the second, and `WithTransportOpts` builds one from the other:
+
+```go
+client := goc.NewClient(
+	goc.WithTimeout(30*time.Second),
+	goc.WithTransportOpts(
+		goc.WithMaxIdleConns(200),
+		goc.WithMaxIdleConnsPerHost(100),
+		goc.WithMaxConnsPerHost(0),
+		goc.WithIdleConnTimeout(90*time.Second),
+		goc.WithTLSHandshakeTimeout(10*time.Second),
+		goc.WithResponseHeaderTimeout(10*time.Second),
+	),
+)
+```
+
+Both types also have methods, for building a configuration up before use:
+
+```go
+transportOpts := goc.NewTransportOpts().
+	WithMaxIdleConnsPerHost(100).
+	WithIdleConnTimeout(90 * time.Second)
+
+clientOpts := goc.NewClientOpts().
+	WithTimeout(30 * time.Second).
+	WithTransportOpts(transportOpts...)
+
+client := goc.NewClient(clientOpts...)
+```
+
+`goc.NewTransport` and `WithTransportOpts` both start from a clone of `http.DefaultTransport`, so environment proxy support, the default dialer and the 100-connection idle pool remain in place. A hand-built `&http.Transport{}` zeroes all of them instead.
+
+Three properties of the standard library drive most pooling problems:
+
+- **`MaxIdleConnsPerHost` defaults to 2.** Beyond that, idle connections are closed rather than pooled, so a client talking to one busy upstream keeps re-dialing. It is the setting worth raising.
+- **Reuse requires draining the response body.** Call `io.Copy(io.Discard, resp.Body)` before `resp.Body.Close()`; an unread body returns the connection unusable.
+- **The pool belongs to the transport.** Connections are reused only between requests sharing one transport, so build the client once and pass it around. A client per request gives each a private pool of one and leaks idle connections.
+
+Instrumentation wraps the transport in a different `http.RoundTripper`, which delegates pooling to the transport it wraps. Build that transport with `goc.NewTransport` and pass the wrapper to `WithTransport` — see [OpenTelemetry integration](#opentelemetry-integration):
+
+```go
+transport := goc.NewTransport(
+	goc.WithMaxIdleConnsPerHost(100),
+	goc.WithIdleConnTimeout(90*time.Second),
+)
+
+client := goc.NewClient(
+	goc.WithTransport(otelhttp.NewTransport(transport)),
+	goc.WithTimeout(30*time.Second),
+)
+```
+
+The doc comments at the top of [`pkg/client/builder.go`](pkg/client/builder.go) and [`pkg/client/transport.go`](pkg/client/transport.go) map every option to its `net/http` field and default value.
 
 ### Production security
 

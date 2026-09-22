@@ -8,6 +8,43 @@ import (
 )
 
 // https://go.dev/src/net/http/client.go
+// https://go.dev/src/net/http/transport.go
+
+// Client settings live on two standard types. *http.Client holds per-request
+// policy, and is what ClientOpts configures. *http.Transport holds the connection
+// pool and everything about establishing a connection: see TransportOpts in
+// transport.go.
+//
+//	*http.Client        option              default
+//	├── Timeout         WithTimeout         0 (no limit)
+//	├── CheckRedirect   WithCheckRedirect   follow up to 10 hops
+//	├── Jar             WithCookieJar       nil (no cookies)
+//	└── Transport       WithTransport       http.DefaultTransport
+//	                    WithTransportOpts
+//
+// Two ways to configure:
+//
+//	client := NewClient(
+//		WithTimeout(30*time.Second),
+//		WithTransportOpts(WithMaxIdleConnsPerHost(100)),
+//	)
+//
+//	opts := NewClientOpts().
+//		WithTimeout(30 * time.Second).
+//		WithTransportOpts(NewTransportOpts().
+//			WithMaxIdleConnsPerHost(100)...)
+//
+//	client := NewClient(opts...)
+//
+// The pool belongs to the transport, so connections are reused only between
+// requests sharing one transport instance: build the client once and hand it
+// around, never per request. Pass a transport built elsewhere with WithTransport,
+// which is how instrumentation composes:
+//
+//	client := NewClient(
+//		WithTransport(otelhttp.NewTransport(transport)),
+//		WithTimeout(30*time.Second),
+//	)
 
 type (
 	// ClientOpts contains HTTP client configuration.
@@ -38,6 +75,13 @@ func (o ClientOpts) WithTransport(transport http.RoundTripper) ClientOpts {
 	return gor.WithElement(o, WithTransport(transport))
 }
 
+// WithTransportOpts sets the client's HTTP transport, built from the supplied
+// transport options over a clone of http.DefaultTransport. Use WithTransport
+// instead to supply a transport built elsewhere, such as an instrumented one.
+func (o ClientOpts) WithTransportOpts(options ...func(*http.Transport) *http.Transport) ClientOpts {
+	return gor.WithElement(o, WithTransportOpts(options...))
+}
+
 // WithCheckRedirect sets the client's redirect policy.
 func (o ClientOpts) WithCheckRedirect(check func(*http.Request, []*http.Request) error) ClientOpts {
 	return gor.WithElement(o, WithCheckRedirect(check))
@@ -57,6 +101,16 @@ func (o ClientOpts) WithTimeout(timeout time.Duration) ClientOpts {
 func WithTransport(transport http.RoundTripper) func(*http.Client) *http.Client {
 	return func(client *http.Client) *http.Client {
 		client.Transport = transport
+		return client
+	}
+}
+
+// WithTransportOpts sets the client's HTTP transport, built from the supplied
+// transport options over a clone of http.DefaultTransport. Use WithTransport
+// instead to supply a transport built elsewhere, such as an instrumented one.
+func WithTransportOpts(options ...func(*http.Transport) *http.Transport) func(*http.Client) *http.Client {
+	return func(client *http.Client) *http.Client {
+		client.Transport = NewTransport(options...)
 		return client
 	}
 }
