@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	gof "gof/pkg/server"
+	gor "gor/pkg/server"
 	"log/slog"
 	"net/http"
 
@@ -116,7 +116,7 @@ func WSHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AppErrorHandler(ctx context.Context, err error) gof.HTTPResponse {
+func AppErrorHandler(ctx context.Context, err error) gor.HTTPResponse {
 	slog.ErrorContext(ctx, "server handle error", "error", err)
 	statusCode := 500
 	aType := "server_err"
@@ -125,13 +125,13 @@ func AppErrorHandler(ctx context.Context, err error) gof.HTTPResponse {
 	case errors.Is(err, ErrBadRequest):
 		statusCode = 400
 		aType = "bad_request"
-		if cause := gof.Unwrap(err, 1); cause != nil {
+		if cause := gor.Unwrap(err, 1); cause != nil {
 			message = cause.Error()
 		}
 	case errors.Is(err, ErrNotFound):
 		statusCode = 404
 		aType = "not_found"
-		if cause := gof.Unwrap(err, 1); cause != nil {
+		if cause := gor.Unwrap(err, 1); cause != nil {
 			message = cause.Error()
 		}
 	}
@@ -140,5 +140,5 @@ func AppErrorHandler(ctx context.Context, err error) gof.HTTPResponse {
 		"message": message,
 	}
 	b, _ := json.Marshal(m)
-	return gof.NewJSONResponse(statusCode, string(b))
+	return gor.NewJSONResponse(statusCode, string(b))
 }

@@ -1,4 +1,4 @@
-package gof
+package gor
 
 import (
 	"bytes"

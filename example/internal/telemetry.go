@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	gof "gof/pkg/server"
+	gor "gor/pkg/server"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -147,7 +147,7 @@ func (h TraceLogHandler) WithGroup(name string) slog.Handler {
 	}
 }
 
-func UserCounter[Req, Resp any](f gof.RouterFunc[Req, Resp]) gof.RouterFunc[Req, Resp] {
+func UserCounter[Req, Resp any](f gor.RouterFunc[Req, Resp]) gor.RouterFunc[Req, Resp] {
 	m := otel.Meter("users")
 	c, err := m.Int64Counter("users_total")
 	if err != nil {

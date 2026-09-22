@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	gof "gof/pkg/server"
+	gor "gor/pkg/server"
 
 	"github.com/BurntSushi/toml"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -46,7 +46,7 @@ func init() {
 
 var cfg Config
 
-const AppName = "gof-example-service"
+const AppName = "gor-example-service"
 
 type (
 	Config struct {
@@ -104,14 +104,14 @@ func Run() {
 		return
 	}
 
-	opts := gof.NewServerOpts().
+	opts := gor.NewServerOpts().
 		WithReadHeaderTimeout(time.Duration(cfg.Server.ReadHeaderTimeout)).
 		WithReadTimeout(time.Duration(cfg.Server.ReadTimeout)).
 		WithWriteTimeout(time.Duration(cfg.Server.WriteTimeout)).
 		WithIdleTimeout(time.Duration(cfg.Server.IdleTimeout)).
 		WithMaxHeaderBytes(1 << 20)
 
-	g := gof.NewEngine(opts).
+	g := gor.NewEngine(opts).
 		EnableSignals().
 		EnableProbes().
 		OnShutdownWithContext(func(ctx context.Context) {
@@ -149,11 +149,11 @@ func Run() {
 		Use(
 			otelhttp.NewMiddleware(AppName),
 			// https://go.dev/blog/defer-panic-and-recover
-			gof.RecoveryMiddleware,
-			gof.ResponseWriterStatusCodeMiddleware,
-			gof.SimpleLoggingMiddleware,
-			gof.BasicMiddleware,
-			gof.AuthenticationMiddleware(UsernamePasswordAutenticator("admin:admin")),
+			gor.RecoveryMiddleware,
+			gor.ResponseWriterStatusCodeMiddleware,
+			gor.SimpleLoggingMiddleware,
+			gor.BasicMiddleware,
+			gor.AuthenticationMiddleware(UsernamePasswordAutenticator("admin:admin")),
 		)
 
 	h := H{NewService(new(Store))}

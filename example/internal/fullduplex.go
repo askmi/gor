@@ -2,8 +2,8 @@ package internal
 
 import (
 	"encoding/json"
-	goc "gof/pkg/client"
-	gof "gof/pkg/server"
+	goc "gor/pkg/client"
+	gor "gor/pkg/server"
 	"io"
 	"log/slog"
 	"net/http"
@@ -22,13 +22,13 @@ func RunFullDuplex() {
 
 func RunServer() {
 
-	opts := gof.NewServerOpts().
+	opts := gor.NewServerOpts().
 		WithReadHeaderTimeout(0).
 		WithReadTimeout(0).
 		WithWriteTimeout(0).
 		WithIdleTimeout(0)
 
-	g := gof.NewEngine(opts)
+	g := gor.NewEngine(opts)
 	r := g.NewRouter("")
 	r.HandleHTTPFunc("GET /stream", func(w http.ResponseWriter, r *http.Request) {
 		// https://www.youtube.com/watch?v=-lcH3qrkh_U&t=5s

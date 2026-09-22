@@ -3,7 +3,7 @@ package internal
 import (
 	"encoding/json"
 	"errors"
-	gof "gof/pkg/server"
+	gor "gor/pkg/server"
 	"io"
 	"net/http"
 	"strconv"
@@ -92,7 +92,7 @@ func (t *DeleteUserRequest) DecodeFromHTTPRequest(r *http.Request) error {
 }
 
 func (p *Principal) DecodeFromHTTPRequest(r *http.Request) error {
-	principal, ok := gof.PrincipalFromContext[Principal](r.Context())
+	principal, ok := gor.PrincipalFromContext[Principal](r.Context())
 	if !ok {
 		p.Username = "anonymous"
 	} else {

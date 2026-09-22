@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.45.0
 	go.opentelemetry.io/otel/sdk/metric v1.45.0
 	go.opentelemetry.io/otel/trace v1.45.0
-	gof v0.0.0
+	gor v0.0.0
 )
 
 require (
@@ -34,4 +34,4 @@ require (
 	google.golang.org/protobuf v1.36.12 // indirect
 )
 
-replace gof => ..
+replace gor => ..

@@ -1,19 +1,19 @@
 <p align="center">
-  <img src="docs/assets/gof-logo.png" width="520" alt="GoF logo">
+  <img src="docs/assets/gor-logo.png" width="520" alt="GoR logo">
 </p>
 
 <h1 align="center">Natural Go Framework</h1>
 
 <p align="center">
   <strong>Write Go naturally. Keep business handlers pure.</strong><br>
-  GoF handles the HTTP boundary without changing how application code feels.
+  GoR handles the HTTP boundary without changing how application code feels.
 </p>
 
 <p align="center">
-  <img src="docs/assets/gof-hero-v5.png" width="900" alt="Two GoF engineers guide typed application data through a vibrant natural system of water, roots, and growing plants">
+  <img src="docs/assets/gor-hero-v5.png" width="900" alt="Two GoR engineers guide typed application data through a vibrant natural system of water, roots, and growing plants">
 </p>
 
-GoF is a zero-dependency framework built with the Go standard library. “Natural” describes the developer experience: handlers use familiar Go signatures, native `context.Context`, and application-owned request and response types. GoF does not introduce a custom context or force HTTP types into business code. Application code remains ordinary Go while GoF provides routing, middleware, decoding, encoding, authentication, error mapping, and server lifecycle at the boundary.
+GoR is a zero-dependency framework built with the Go standard library. “Natural” describes the developer experience: handlers use familiar Go signatures, native `context.Context`, and application-owned request and response types. GoR does not introduce a custom context or force HTTP types into business code. Application code remains ordinary Go while GoR provides routing, middleware, decoding, encoding, authentication, error mapping, and server lifecycle at the boundary.
 
 The engine includes production-oriented lifecycle primitives for Kubernetes workloads: startup, liveness, and readiness probes; `SIGTERM` and interrupt handling; graceful HTTP shutdown; and deadline-aware hooks for closing application-owned resources. Together, these let a service stop accepting traffic, drain in-flight requests, and clean up resources within the pod's termination grace period.
 
@@ -23,7 +23,7 @@ func CreateOrder(ctx context.Context, command CreateOrderCommand) (Order, error)
 }
 ```
 
-GoF owns the transport plumbing around that function: routing, middleware, request decoding, error mapping, response encoding, and writing to the network.
+GoR owns the transport plumbing around that function: routing, middleware, request decoding, error mapping, response encoding, and writing to the network.
 
 The key feature is the typed `RouterFunc` boundary:
 
@@ -31,15 +31,15 @@ The key feature is the typed `RouterFunc` boundary:
 type RouterFunc[Req any, Resp any] func(context.Context, Req) (Resp, error)
 ```
 
-Your function does not import GoF or implement a framework interface. Go infers its request and response types when it is registered, giving the router compile-time type information without leaking transport concerns into the application. Unlike conventional router APIs centered on `http.Handler`, this preserves the experience of writing and testing a normal Go function.
+Your function does not import GoR or implement a framework interface. Go infers its request and response types when it is registered, giving the router compile-time type information without leaking transport concerns into the application. Unlike conventional router APIs centered on `http.Handler`, this preserves the experience of writing and testing a normal Go function.
 
-> **Important:** GoF is in early development. Expect API changes before the first stable release.
+> **Important:** GoR is in early development. Expect API changes before the first stable release.
 
 ## Table of contents
 
 - [Idea](#idea)
 - [Key Features](#key-features)
-- [Why GoF?](#why-gof)
+- [Why GoR?](#why-gor)
   - [The RouterFunc difference](#the-routerfunc-difference)
   - [Pure Go handlers](#pure-go-handlers)
 - [Simple routing](#simple-routing)
@@ -86,11 +86,11 @@ The framework's approach to repetition is informed by the ideas in O'Reilly's ar
 - **Authentication and authorization:** basic and bearer credential extraction, pluggable authenticators, security contexts, and application-owned principals and roles.
 - **Native interoperability:** mount any `http.Handler` directly for streaming, files, protocol upgrades, or specialized HTTP behavior.
 
-## Why GoF?
+## Why GoR?
 
 In many services, handlers become tightly coupled to HTTP. They read path values, decode bodies, select status codes, serialize responses, and write headers alongside business decisions. This repetition makes handlers harder to read, test, and reuse.
 
-With GoF, the public shape of an endpoint is a normal typed Go function:
+With GoR, the public shape of an endpoint is a normal typed Go function:
 
 ```go
 func(context.Context, RequestModel) (ResponseModel, error)
@@ -114,7 +114,7 @@ This gives you framework capabilities at runtime while preserving a natural Go e
 
 ### Pure Go handlers
 
-GoF encourages developers to keep business handlers vendor-agnostic by using only standard Go and application-owned types in their signatures—without GoF, HTTP, database-driver, or other vendor-specific types. This keeps the business layer portable and independent of infrastructure choices.
+GoR encourages developers to keep business handlers vendor-agnostic by using only standard Go and application-owned types in their signatures—without GoR, HTTP, database-driver, or other vendor-specific types. This keeps the business layer portable and independent of infrastructure choices.
 
 The following method is the reference handler shape:
 
@@ -124,9 +124,9 @@ func (h *H) GetUser(ctx context.Context, userID GetUserID) (GetUserResponse, err
 }
 ```
 
-`context.Context` and `error` come from Go, while `GetUserID`, `GetUserResponse`, and `H` belong to the application. GoF does not wrap or replace `context.Context` with a framework-specific context type. The handler does not know which router decoded the request, which protocol delivered it, or which component will encode its response. This is pure Go code and can be called directly like any other method.
+`context.Context` and `error` come from Go, while `GetUserID`, `GetUserResponse`, and `H` belong to the application. GoR does not wrap or replace `context.Context` with a framework-specific context type. The handler does not know which router decoded the request, which protocol delivered it, or which component will encode its response. This is pure Go code and can be called directly like any other method.
 
-GoF turns that flow into a small, explicit pipeline:
+GoR turns that flow into a small, explicit pipeline:
 
 ```text
 HTTP request
@@ -147,7 +147,7 @@ You keep control of each boundary and can replace its behavior when the defaults
 Create and mount a router through the engine when the engine owns the complete server:
 
 ```go
-engine := gof.NewEngine()
+engine := gor.NewEngine()
 
 engine.NewRouter("/api/v1/").
 	Get("/users/{id}", getUser).
@@ -159,11 +159,11 @@ engine.NewRouter("/api/v1/").
 Alternatively, configure a router independently and mount it explicitly:
 
 ```go
-router := gof.NewRouter("/api/v1/").
+router := gor.NewRouter("/api/v1/").
 	Get("/users/{id}", getUser).
 	Post("/users", addUser)
 
-engine := gof.NewEngine().Route(router)
+engine := gor.NewEngine().Route(router)
 ```
 
 Use the first form for concise application setup. Use the second when routers are created in separate packages, tested independently, or shared with a standard `http.Server`.
@@ -176,10 +176,10 @@ Typed routes and native HTTP handlers can coexist on the same router. Use `Handl
 router.HandleHTTPFunc("GET /events", streamEvents)
 ```
 
-Because `Router` implements `http.Handler`, it can also be used directly with Go's standard HTTP server without the GoF engine:
+Because `Router` implements `http.Handler`, it can also be used directly with Go's standard HTTP server without the GoR engine:
 
 ```go
-router := gof.NewRouter("/api/v1/").
+router := gor.NewRouter("/api/v1/").
 	Get("/users/{id}", getUser).
 	Post("/users", addUser)
 
@@ -203,7 +203,7 @@ import (
 	"net/http"
 	"strconv"
 
-	gof "gof/pkg/server"
+	gor "gor/pkg/server"
 )
 
 type empty struct{}
@@ -233,17 +233,17 @@ func getUser(_ context.Context, userID GetUserID) (User, error) {
 }
 
 func main() {
-	router := gof.NewRouter("/api/")
+	router := gor.NewRouter("/api/")
 	router.Use(
-		gof.RecoveryMiddleware,
-		gof.ResponseWriterStatusCodeMiddleware,
+		gor.RecoveryMiddleware,
+		gor.ResponseWriterStatusCodeMiddleware,
 	)
 
 	router.
 		Get("/hello", helloWorld).
 		Get("/users/{id}", getUser)
 
-	engine := gof.NewEngine()
+	engine := gor.NewEngine()
 	engine.Route(router)
 
 	if err := engine.Listen(":8080"); err != nil {
@@ -285,17 +285,17 @@ func (q *NameQuery) DecodeFromHTTPRequest(req *http.Request) error {
 }
 ```
 
-`DecodeFromHTTPRequest` can validate input as it decodes it. When it returns an error, GoF skips the handler and passes that error to the router's `ErrorHandler`:
+`DecodeFromHTTPRequest` can validate input as it decodes it. When it returns an error, GoR skips the handler and passes that error to the router's `ErrorHandler`:
 
 ```go
-router.UseErrorHandler(func(ctx context.Context, err error) gof.HTTPResponse {
+router.UseErrorHandler(func(ctx context.Context, err error) gor.HTTPResponse {
 	if errors.Is(err, ErrNameRequired) {
-		return gof.NewJSONResponse(
+		return gor.NewJSONResponse(
 			http.StatusBadRequest,
 			`{"error":"name is required"}`,
 		)
 	}
-	return gof.DefaultErrorHandler(ctx, err)
+	return gor.DefaultErrorHandler(ctx, err)
 })
 ```
 
@@ -347,7 +347,7 @@ router.
 router.HandleFunc(
 	"GET /reports/{id}",
 	h.GetReport,
-	gof.WithStatusCode(http.StatusAccepted),
+	gor.WithStatusCode(http.StatusAccepted),
 )
 ```
 
@@ -365,8 +365,8 @@ Use `UseResponseHandler` to customize successful responses and `UseErrorHandler`
 ```go
 // Common middleware for all endpoints registered afterward.
 router.Use(
-	gof.RecoveryMiddleware,
-	gof.AuthenticationMiddleware(authenticator),
+	gor.RecoveryMiddleware,
+	gor.AuthenticationMiddleware(authenticator),
 )
 
 // Extra middleware for selected endpoints only.
@@ -378,11 +378,11 @@ router.Get("/users/{id}", h.GetUser)
 
 ## Authentication
 
-Credential extraction and authentication are separate by design. GoF provides middleware that reads credentials from the `Authorization` header, but the application owns the policy for validating those credentials and constructing its principal.
+Credential extraction and authentication are separate by design. GoR provides middleware that reads credentials from the `Authorization` header, but the application owns the policy for validating those credentials and constructing its principal.
 
 ### Basic authentication
 
-`BasicMiddleware` extracts the encoded username and password. The application's `Authenticator` decodes and validates them, then returns either `gof.Authenticated` or `gof.Rejected`:
+`BasicMiddleware` extracts the encoded username and password. The application's `Authenticator` decodes and validates them, then returns either `gor.Authenticated` or `gor.Rejected`:
 
 ```go
 type Principal struct {
@@ -390,29 +390,29 @@ type Principal struct {
 	Roles    []string
 }
 
-func BasicAuthenticator(expectedUser, expectedPassword string) gof.Authenticator {
-	return func(s gof.SecurityContext) (gof.SecurityContext, error) {
+func BasicAuthenticator(expectedUser, expectedPassword string) gor.Authenticator {
+	return func(s gor.SecurityContext) (gor.SecurityContext, error) {
 		raw, ok := s.Identity().([]byte)
 		if !ok {
-			return gof.Rejected("invalid credentials"), nil
+			return gor.Rejected("invalid credentials"), nil
 		}
 
-		username, password, ok := gof.DecodeBasic(raw)
+		username, password, ok := gor.DecodeBasic(raw)
 		if !ok || string(username) != expectedUser || string(password) != expectedPassword {
-			return gof.Rejected("invalid credentials"), nil
+			return gor.Rejected("invalid credentials"), nil
 		}
 
 		principal := Principal{
 			Username: string(username),
 			Roles:    []string{"admin"},
 		}
-		return gof.Authenticated(principal.Username, principal), nil
+		return gor.Authenticated(principal.Username, principal), nil
 	}
 }
 
 router.Use(
-	gof.BasicMiddleware,
-	gof.AuthenticationMiddleware(BasicAuthenticator("admin", "secret")),
+	gor.BasicMiddleware,
+	gor.AuthenticationMiddleware(BasicAuthenticator("admin", "secret")),
 )
 ```
 
@@ -420,12 +420,12 @@ This example uses fixed credentials only to show the contract. A real applicatio
 
 ### Bearer/JWT authentication
 
-`BearerMiddleware` extracts the token without imposing a token format. Implement JWT parsing, signature and claim validation, key selection, and principal construction in the application, then pass that authenticator to GoF:
+`BearerMiddleware` extracts the token without imposing a token format. Implement JWT parsing, signature and claim validation, key selection, and principal construction in the application, then pass that authenticator to GoR:
 
 ```go
 router.Use(
-	gof.BearerMiddleware,
-	gof.AuthenticationMiddleware(JwtAuthenticator),
+	gor.BearerMiddleware,
+	gor.AuthenticationMiddleware(JwtAuthenticator),
 )
 ```
 
@@ -437,24 +437,24 @@ Authentication must be last in the credential-processing part of the middleware 
 
 ```go
 router.Use(
-	gof.RecoveryMiddleware,
-	gof.ResponseWriterStatusCodeMiddleware,
-	gof.SimpleLoggingMiddleware,
-	gof.BearerMiddleware, // 1. Extract the raw credential.
-	gof.AuthenticationMiddleware(jwtAuthenticator), // 2. Validate it.
+	gor.RecoveryMiddleware,
+	gor.ResponseWriterStatusCodeMiddleware,
+	gor.SimpleLoggingMiddleware,
+	gor.BearerMiddleware, // 1. Extract the raw credential.
+	gor.AuthenticationMiddleware(jwtAuthenticator), // 2. Validate it.
 )
 ```
 
-GoF executes middleware in declaration order. `AuthenticationMiddleware` therefore has to come after `BasicMiddleware`, `BearerMiddleware`, or another credential-extraction middleware; otherwise there is no `SecurityContext` for it to authenticate and the request receives `401 Unauthorized`. Authorization middleware must run after authentication so it sees the validated principal.
+GoR executes middleware in declaration order. `AuthenticationMiddleware` therefore has to come after `BasicMiddleware`, `BearerMiddleware`, or another credential-extraction middleware; otherwise there is no `SecurityContext` for it to authenticate and the request receives `401 Unauthorized`. Authorization middleware must run after authentication so it sees the validated principal.
 
 Use the Basic and Bearer pipelines separately unless the application authenticator is deliberately designed to accept both credential types.
 
 ### Security context and principal
 
-The request context carries a `gof.SecurityContext`, which exposes the authentication state, a stable identity string, and the application-defined identity. Retrieve an authenticated principal with its concrete application type:
+The request context carries a `gor.SecurityContext`, which exposes the authentication state, a stable identity string, and the application-defined identity. Retrieve an authenticated principal with its concrete application type:
 
 ```go
-principal, ok := gof.PrincipalFromContext[Principal](ctx)
+principal, ok := gor.PrincipalFromContext[Principal](ctx)
 if !ok {
 	return ErrUnauthenticated
 }
@@ -469,10 +469,10 @@ Application-specific authorization remains ordinary middleware, keeping business
 For example, an app-owned `Authorize` middleware can read roles from the authenticated principal:
 
 ```go
-func Authorize(requiredRole string) gof.HTTPMiddleware {
+func Authorize(requiredRole string) gor.HTTPMiddleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			principal, ok := gof.PrincipalFromContext[Principal](r.Context())
+			principal, ok := gor.PrincipalFromContext[Principal](r.Context())
 			if !ok || !slices.Contains(principal.Roles, requiredRole) {
 				w.WriteHeader(http.StatusForbidden)
 				return
@@ -505,7 +505,7 @@ The demo implementation is in [`example/internal/mdw.go`](example/internal/mdw.g
 
 ## Production readiness
 
-GoF provides the lifecycle and observability building blocks needed to run an HTTP service in a Kubernetes cluster while staying close to `net/http`, `log/slog`, and standard middleware contracts.
+GoR provides the lifecycle and observability building blocks needed to run an HTTP service in a Kubernetes cluster while staying close to `net/http`, `log/slog`, and standard middleware contracts.
 
 | Concern | Support |
 | --- | --- |
@@ -522,7 +522,7 @@ GoF provides the lifecycle and observability building blocks needed to run an HT
 Enable lightweight HTTP probes on the engine:
 
 ```go
-engine := gof.NewEngine().EnableProbes()
+engine := gor.NewEngine().EnableProbes()
 engine.Route(router)
 ```
 
@@ -543,7 +543,7 @@ Probe responses use `application/health+json`. The built-in endpoints are shallo
 
 Kubernetes CPU requests and limits serve different purposes. The scheduler uses `requests.cpu` to place Pods, and the request determines the container's relative CPU weight during contention. A CPU limit is a hard CPU-time ceiling enforced by Linux cgroups; exceeding it throttles the container instead of terminating it. For example, `500m` represents half of one logical CPU's processing time. See [Kubernetes resource management](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
 
-Go 1.25 and later automatically derive the default `GOMAXPROCS` from the smaller of the logical CPU count, CPU affinity, and the container's cgroup CPU limit. Go observes the CPU **limit**, not the request, rounds fractional limits up, and normally keeps `GOMAXPROCS` at least `2`. It also periodically detects limit changes. Setting the `GOMAXPROCS` environment variable or calling `runtime.GOMAXPROCS` disables this automatic behavior. GoF targets Go 1.27, so an additional `automaxprocs` dependency is not needed. See [container-aware `GOMAXPROCS`](https://go.dev/blog/container-aware-gomaxprocs) and the current [`runtime` documentation](https://pkg.go.dev/runtime#GOMAXPROCS).
+Go 1.25 and later automatically derive the default `GOMAXPROCS` from the smaller of the logical CPU count, CPU affinity, and the container's cgroup CPU limit. Go observes the CPU **limit**, not the request, rounds fractional limits up, and normally keeps `GOMAXPROCS` at least `2`. It also periodically detects limit changes. Setting the `GOMAXPROCS` environment variable or calling `runtime.GOMAXPROCS` disables this automatic behavior. GoR targets Go 1.27, so an additional `automaxprocs` dependency is not needed. See [container-aware `GOMAXPROCS`](https://go.dev/blog/container-aware-gomaxprocs) and the current [`runtime` documentation](https://pkg.go.dev/runtime#GOMAXPROCS).
 
 For latency-sensitive services, begin with a measured request and consider omitting the CPU limit so the service can use idle node capacity without cgroup throttling:
 
@@ -558,10 +558,10 @@ resources:
 
 Add a CPU limit when strict workload isolation is more important than burst capacity, then load-test that exact value. Avoid setting `GOMAXPROCS` manually unless measurements show that Go's default is unsuitable—especially for sub-CPU limits, where Go's minimum and rounding behavior matter. Monitor CPU usage, `container_cpu_cfs_throttled_periods_total`, scheduler latency, and HTTP p95/p99 latency. Size CPU requests carefully because percentage-based HPA CPU utilization is calculated relative to the request.
 
-The example uses a two-stage build with a static Go binary and a non-root `scratch` runtime containing only the binary, CA roots, and static files. Build it from the repository root because the example module replaces `gof` with its parent directory:
+The example uses a two-stage build with a static Go binary and a non-root `scratch` runtime containing only the binary, CA roots, and static files. Build it from the repository root because the example module replaces `gor` with its parent directory:
 
 ```bash
-docker build --pull -f example/Dockerfile -t gof-example:latest .
+docker build --pull -f example/Dockerfile -t gor-example:latest .
 ```
 
 ### Server shutdown
@@ -569,9 +569,9 @@ docker build --pull -f example/Dockerfile -t gof-example:latest .
 `Listen` blocks for the server lifecycle. Enable managed signals and configure the shutdown timeout before constructing the engine:
 
 ```go
-gof.DefaultGracefulTimeout = 25 * time.Second
+gor.DefaultGracefulTimeout = 25 * time.Second
 
-engine := gof.NewEngine().
+engine := gor.NewEngine().
 	EnableSignals(os.Interrupt, syscall.SIGTERM).
 	Route(router)
 
@@ -625,7 +625,7 @@ Hooks run in registration order. Each context-aware hook should return when `ctx
 
 ### OpenTelemetry integration
 
-GoF uses standard HTTP middleware and `context.Context`, so OpenTelemetry propagation works without a framework-specific adapter. Install the global providers first, then place `otelhttp` before logging middleware:
+GoR uses standard HTTP middleware and `context.Context`, so OpenTelemetry propagation works without a framework-specific adapter. Install the global providers first, then place `otelhttp` before logging middleware:
 
 ```go
 otel.SetTracerProvider(tracerProvider)
@@ -637,8 +637,8 @@ otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 
 router.Use(
 	otelhttp.NewMiddleware("users-service"),
-	gof.ResponseWriterStatusCodeMiddleware,
-	gof.SimpleLoggingMiddleware,
+	gor.ResponseWriterStatusCodeMiddleware,
+	gor.SimpleLoggingMiddleware,
 )
 ```
 
@@ -663,8 +663,8 @@ Custom metrics can be added with a typed route decorator. The instrument is crea
 
 ```go
 func UserCounter[Req, Resp any](
-	next gof.RouterFunc[Req, Resp],
-) gof.RouterFunc[Req, Resp] {
+	next gor.RouterFunc[Req, Resp],
+) gor.RouterFunc[Req, Resp] {
 	counter, err := otel.Meter("users").Int64Counter("users_total")
 	if err != nil {
 		panic("create users counter: " + err.Error())
@@ -696,10 +696,10 @@ The provided middleware can recover panics, record response status, log requests
 
 ```go
 router.Use(
-	gof.RecoveryMiddleware,
-	gof.ResponseWriterStatusCodeMiddleware,
-	gof.SimpleLoggingMiddleware,
-	gof.ReplayBodyMiddleware,
+	gor.RecoveryMiddleware,
+	gor.ResponseWriterStatusCodeMiddleware,
+	gor.SimpleLoggingMiddleware,
+	gor.ReplayBodyMiddleware,
 )
 ```
 
@@ -708,14 +708,14 @@ router.Use(
 Configure the engine's underlying `http.Server` with chainable `ServerOpts`:
 
 ```go
-serverOpts := gof.NewServerOpts().
+serverOpts := gor.NewServerOpts().
 	WithReadHeaderTimeout(5 * time.Second).
 	WithReadTimeout(15 * time.Second).
 	WithWriteTimeout(30 * time.Second).
 	WithIdleTimeout(60 * time.Second).
 	WithMaxHeaderBytes(1 << 20)
 
-engine := gof.NewEngine(serverOpts)
+engine := gor.NewEngine(serverOpts)
 ```
 
 TLS remains application- or ingress-managed until engine TLS configuration is implemented.
@@ -726,22 +726,22 @@ Keep credential extraction, authentication, and authorization in that order:
 
 ```go
 router.Use(
-	gof.BearerMiddleware,
-	gof.AuthenticationMiddleware(authenticator),
+	gor.BearerMiddleware,
+	gor.AuthenticationMiddleware(authenticator),
 )
 
 router.With(Authorize("admin")).
 	Delete("/users/{id}", h.DeleteUser)
 ```
 
-Use either the Basic or bearer extraction pipeline unless the authenticator intentionally supports both. The `authenticator` and `Authorize` functions above are application-owned; GoF does not implement JWT verification, authorization policy, TLS, or rate limiting. Use Basic authentication only over TLS, terminate TLS at the application or ingress boundary, avoid logging credentials, and apply route-scoped authorization with `With`. Do not put secrets in URLs because the default request logger includes the request URI. See [Authentication](#authentication) for the complete flow.
+Use either the Basic or bearer extraction pipeline unless the authenticator intentionally supports both. The `authenticator` and `Authorize` functions above are application-owned; GoR does not implement JWT verification, authorization policy, TLS, or rate limiting. Use Basic authentication only over TLS, terminate TLS at the application or ingress boundary, avoid logging credentials, and apply route-scoped authorization with `With`. Do not put secrets in URLs because the default request logger includes the request URI. See [Authentication](#authentication) for the complete flow.
 
 Environment-based engine configuration and engine-managed TLS are tracked in [`TODO.md`](TODO.md). Until they are implemented, configure them in the application or at the Kubernetes ingress/proxy boundary.
 
 ## Project layout
 
 ```text
-gof/
+gor/
 ├── pkg/
 │   ├── server/                 # Routing, middleware, and server lifecycle
 │   │   ├── adapter.go          # Engine/router constructors and typed handlers
@@ -771,9 +771,9 @@ gof/
 
 ## Example project
 
-The [`example`](example/) folder contains a complete demo project showing how to use GoF effectively when writing services. It demonstrates typed business handlers, request models, routing, middleware, authentication, authorization, error mapping, JSON responses, logging, and static file serving in one small application.
+The [`example`](example/) folder contains a complete demo project showing how to use GoR effectively when writing services. It demonstrates typed business handlers, request models, routing, middleware, authentication, authorization, error mapping, JSON responses, logging, and static file serving in one small application.
 
-Use it as a practical starting point for organizing a GoF-based service and for seeing how transport concerns remain separate from handler business logic.
+Use it as a practical starting point for organizing a GoR-based service and for seeing how transport concerns remain separate from handler business logic.
 
 ## Development
 

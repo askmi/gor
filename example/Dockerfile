@@ -21,7 +21,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -trimpath \
     -buildvcs=false \
     -ldflags="-s -w -buildid=" \
-    -o /out/gof-example \
+    -o /out/gor-example \
     .
 
 FROM scratch
@@ -29,11 +29,11 @@ FROM scratch
 WORKDIR /app
 
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=build /out/gof-example /app/gof-example
+COPY --from=build /out/gor-example /app/gor-example
 COPY --from=build /src/example/static /app/static
 
 USER 65532:65532
 
 EXPOSE 8080
 
-ENTRYPOINT ["/app/gof-example"]
+ENTRYPOINT ["/app/gor-example"]

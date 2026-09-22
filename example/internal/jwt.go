@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	gof "gof/pkg/server"
+	gor "gor/pkg/server"
 	"strings"
 	"time"
 )
@@ -42,22 +42,22 @@ func (jwt *jwtSecurityContext) IsAuthenticated() bool  { return false }
 func (jwt *jwtSecurityContext) IdentityString() string { return jwt.sub }
 func (jwt *jwtSecurityContext) Identity() any          { return jwt.claims }
 
-var JwtAuthenticator = func(s gof.SecurityContext) (gof.SecurityContext, error) {
+var JwtAuthenticator = func(s gor.SecurityContext) (gor.SecurityContext, error) {
 	b, ok := s.Identity().([]byte)
 	if !ok {
-		return gof.Rejected("invalid bearer"), nil
+		return gor.Rejected("invalid bearer"), nil
 	}
 	jwt, err := DecodeBearer(b)
 	if err != nil {
-		return gof.Rejected("invalid jwt"), nil
+		return gor.Rejected("invalid jwt"), nil
 	}
 
 	err = jwt.Validate()
 	if err != nil {
-		return gof.Rejected("invalid jwt"), nil
+		return gor.Rejected("invalid jwt"), nil
 	}
 
-	return gof.Authenticated(jwt.sub, jwt), nil
+	return gor.Authenticated(jwt.sub, jwt), nil
 }
 
 func (jwt *jwtSecurityContext) Validate() error {
