@@ -37,7 +37,7 @@ func shutdownTestEngine(t *testing.T, e Engine) {
 
 func TestEngineRequiresRouter(t *testing.T) {
 	e := NewEngine()
-	if err := e.Listen(":0"); !errors.Is(err, ErrEngineRouterIsMissing) {
+	if err := e.ListenAdr(":0"); !errors.Is(err, ErrEngineRouterIsMissing) {
 		t.Fatalf("Listen() error = %v, want %v", err, ErrEngineRouterIsMissing)
 	}
 }
@@ -46,7 +46,7 @@ func TestEngineListen(t *testing.T) {
 	e := newTestEngine()
 	result := make(chan error, 1)
 	go func() {
-		result <- e.Listen(":0")
+		result <- e.ListenAdr(":0")
 	}()
 
 	deadline := time.Now().Add(2 * time.Second)
@@ -90,7 +90,7 @@ func TestEngineRequiresStartForLifecycleOperations(t *testing.T) {
 func TestEngineMountsRouterAfterStart(t *testing.T) {
 	e := newTestEngine()
 	result := make(chan error, 1)
-	go func() { result <- e.Listen(":0") }()
+	go func() { result <- e.ListenAdr(":0") }()
 	waitForEngineStart(t, e)
 
 	dynamic := NewRouter("/dynamic/")
@@ -115,7 +115,7 @@ func TestEngineMountsRouterAfterStart(t *testing.T) {
 func TestEngineDefaultProbes(t *testing.T) {
 	e := newTestEngine().EnableProbes()
 	result := make(chan error, 1)
-	go func() { result <- e.Listen(":0") }()
+	go func() { result <- e.ListenAdr(":0") }()
 	waitForEngineStart(t, e)
 
 	for _, path := range []string{"/health", "/healthz", "/livez", "/startupz", "/readyz"} {
@@ -140,7 +140,7 @@ func TestEngineStartReturnsListenError(t *testing.T) {
 	}
 	e := newTestEngine()
 	address := listener.Addr().String()
-	if err := e.Listen(address); err == nil {
+	if err := e.ListenAdr(address); err == nil {
 		listener.Close()
 		t.Fatal("Listen() error = nil, want address-in-use error")
 	}
@@ -149,7 +149,7 @@ func TestEngineStartReturnsListenError(t *testing.T) {
 		t.Fatalf("listener.Close() error = %v", err)
 	}
 	result := make(chan error, 1)
-	go func() { result <- e.Listen(address) }()
+	go func() { result <- e.ListenAdr(address) }()
 	waitForEngineStart(t, e)
 	shutdownTestEngine(t, e)
 	if err := <-result; err != nil {
@@ -187,7 +187,7 @@ func TestEngineWithGracefulPeriodRejectsNonPositive(t *testing.T) {
 func TestEngineWithGracefulPeriodRejectsAfterStart(t *testing.T) {
 	e := newTestEngine()
 	result := make(chan error, 1)
-	go func() { result <- e.Listen(":0") }()
+	go func() { result <- e.ListenAdr(":0") }()
 	waitForEngineStart(t, e)
 
 	func() {
@@ -202,6 +202,84 @@ func TestEngineWithGracefulPeriodRejectsAfterStart(t *testing.T) {
 	shutdownTestEngine(t, e)
 	if err := <-result; err != nil {
 		t.Fatalf("Listen() error = %v", err)
+	}
+}
+
+func TestEngineListenUsesDefaultAddress(t *testing.T) {
+	// Bind an ephemeral port rather than the real default, which may be in use.
+	original := DefaultAddress
+	DefaultAddress = ":0"
+	defer func() { DefaultAddress = original }()
+
+	e := newTestEngine()
+	result := make(chan error, 1)
+	go func() { result <- e.Listen() }()
+	waitForEngineStart(t, e)
+
+	if addr := e.(*engine).server.Addr; addr != DefaultAddress {
+		t.Errorf("Addr = %q, want %q", addr, DefaultAddress)
+	}
+
+	shutdownTestEngine(t, e)
+	if err := <-result; err != nil {
+		t.Fatalf("Listen() error = %v", err)
+	}
+}
+
+func TestDefaultAddressPort(t *testing.T) {
+	if DefaultAddress != ":8080" {
+		t.Errorf("DefaultAddress = %q, want %q", DefaultAddress, ":8080")
+	}
+}
+
+func TestEngineListenUsesConfiguredPort(t *testing.T) {
+	e := NewEngine(WithPort(0))
+	e.WithLogger(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	e.Route(NewRouter("/"))
+
+	result := make(chan error, 1)
+	go func() { result <- e.Listen() }()
+	waitForEngineStart(t, e)
+
+	if addr := e.(*engine).server.Addr; addr != ":0" {
+		t.Errorf("Addr = %q, want %q", addr, ":0")
+	}
+
+	shutdownTestEngine(t, e)
+	if err := <-result; err != nil {
+		t.Fatalf("Listen() error = %v", err)
+	}
+}
+
+func TestEngineListenAdrOverridesPort(t *testing.T) {
+	e := NewEngine(WithPort(8080))
+	e.WithLogger(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	e.Route(NewRouter("/"))
+
+	result := make(chan error, 1)
+	go func() { result <- e.ListenAdr(":0") }()
+	waitForEngineStart(t, e)
+
+	if addr := e.(*engine).server.Addr; addr != ":0" {
+		t.Errorf("Addr = %q, want %q", addr, ":0")
+	}
+
+	shutdownTestEngine(t, e)
+	if err := <-result; err != nil {
+		t.Fatalf("ListenAdr() error = %v", err)
+	}
+}
+
+func TestWithPortRejectsInvalidPort(t *testing.T) {
+	for _, port := range []int{-1, 65536} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Fatalf("WithPort(%d) did not panic", port)
+				}
+			}()
+			WithPort(port)
+		}()
 	}
 }
 

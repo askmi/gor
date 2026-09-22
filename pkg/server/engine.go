@@ -16,6 +16,9 @@ import (
 
 var DefaultGracefulTimeout = 30 * time.Second
 
+// DefaultAddress is the listen address used when no port is configured.
+var DefaultAddress = ":8080"
+
 // https://philprime.dev/blog/2026/05/19/standardized-health-endpoint-in-go.html
 var defaultProbes = []string{
 	"GET /health",
@@ -128,7 +131,12 @@ func (e *engine) WithLogger(l *slog.Logger) {
 	e.log = l
 }
 
-func (e *engine) Listen(address string) error {
+// Listen serves on the address set by WithPort, or on DefaultAddress.
+func (e *engine) Listen() error {
+	return e.ListenAdr("")
+}
+
+func (e *engine) ListenAdr(address string) error {
 	if err := e.start(address); err != nil {
 		return err
 	}
@@ -209,6 +217,12 @@ func (e *engine) start(address string) error {
 		Handler: mux,
 	}
 	e.opts.apply(server)
+	// An explicit address wins over WithPort, which in turn wins over the default.
+	if address != "" {
+		server.Addr = address
+	} else if server.Addr == "" {
+		server.Addr = DefaultAddress
+	}
 	// check that port is available
 	listener, err := net.Listen("tcp", server.Addr)
 	if err != nil {

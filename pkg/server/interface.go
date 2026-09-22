@@ -31,8 +31,11 @@ type (
 
 	// Engine owns the HTTP server lifecycle and its mounted routers.
 	Engine interface {
-		// Start serving synchronously.
-		Listen(string) error
+		// Listen serves synchronously on the address set by WithPort, or on
+		// DefaultAddress when no port is configured.
+		Listen() error
+		// ListenAdr serves synchronously on address, overriding WithPort.
+		ListenAdr(string) error
 		// Stop gracefully stops the server within ctx's deadline.
 		StopGracefully(context.Context) error
 		// Done returns a channel closed when serving ends.

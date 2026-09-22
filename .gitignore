@@ -6,3 +6,6 @@
 .mcp.json
 .ssh/
 TODO.md
+
+# Delve debug binaries
+__debug_bin*

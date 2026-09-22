@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	goc "gor/pkg/client"
 	gor "gor/pkg/server"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -71,7 +73,17 @@ func (h *H) SearchUser(ctx context.Context, req SearchUserRequest) ([]GetUserRes
 
 func DefaultHandler(w http.ResponseWriter, r *http.Request) {
 	slog.InfoContext(r.Context(), "server: not found path "+r.RequestURI)
-	http.NotFound(w, r)
+
+	c := goc.NewClient()
+	r, _ = http.NewRequestWithContext(r.Context(), "GET", "https://httpbin.org/get", nil)
+	resp, _ := c.Do(r)
+
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(resp.Body)
+	w.WriteHeader(404)
+	w.Write(b)
+
+	// http.NotFound(w, r)
 }
 
 func GetTrace(ctx context.Context, _ Empty) (map[string]string, error) {

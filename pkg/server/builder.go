@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -24,6 +25,11 @@ func (o ServerOpts) apply(server *http.Server) *http.Server {
 // WithOption appends an arbitrary option, for settings without a dedicated method.
 func (o ServerOpts) WithOption(option func(*http.Server) *http.Server) ServerOpts {
 	return WithElement(o, option)
+}
+
+// WithPort sets the port the server listens on.
+func (o ServerOpts) WithPort(port int) ServerOpts {
+	return WithElement(o, WithPort(port))
 }
 
 // WithReadHeaderTimeout sets the request-header read timeout.
@@ -104,6 +110,19 @@ func (o ServerOpts) WithProtocols(protocols *http.Protocols) ServerOpts {
 // WithDisableClientPriority controls HTTP/2 client priority handling.
 func (o ServerOpts) WithDisableClientPriority(disable bool) ServerOpts {
 	return WithElement(o, WithDisableClientPriority(disable))
+}
+
+// WithPort sets the port the server listens on. It panics if port is outside
+// the valid range; port 0 asks the operating system for an unused port.
+func WithPort(port int) func(*http.Server) *http.Server {
+	if port < 0 || port > 65535 {
+		panic("server: invalid port " + strconv.Itoa(port))
+	}
+
+	return func(server *http.Server) *http.Server {
+		server.Addr = ":" + strconv.Itoa(port)
+		return server
+	}
 }
 
 // WithReadHeaderTimeout sets the request-header read timeout.

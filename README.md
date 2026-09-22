@@ -246,13 +246,13 @@ func main() {
 	engine := gor.NewEngine()
 	engine.Route(router)
 
-	if err := engine.Listen(":8080"); err != nil {
+	if err := engine.Listen(); err != nil {
 		log.Fatal(err)
 	}
 }
 ```
 
-`Listen` starts the server and blocks until it stops. See [Server shutdown](#server-shutdown) for signal handling and shutdown deadlines.
+`Listen` starts the server on `DefaultAddress` (`:8080`) and blocks until it stops. Pass `gor.WithPort(9000)` to `NewEngine` to choose a port, or call `ListenAdr(":9000")` to supply the full address. See [Server shutdown](#server-shutdown) for signal handling and shutdown deadlines.
 
 `helloWorld` is a complete endpoint with no HTTP-specific code. `getUser` demonstrates the same pure function shape with an application-owned path value and response model. `GetUserID.DecodeFromHTTPRequest` is a transport adapter; it can be replaced globally through `UseRequestHandler` when business models should contain no HTTP-aware methods at all.
 
@@ -574,7 +574,7 @@ engine := gor.NewEngine().
 	WithGracefulPeriod(25 * time.Second).
 	Route(router)
 
-if err := engine.Listen(":8080"); err != nil {
+if err := engine.Listen(); err != nil {
 	log.Fatal(err)
 }
 ```
@@ -708,6 +708,7 @@ Configure the engine's underlying `http.Server` by passing options directly:
 
 ```go
 engine := gor.NewEngine(
+	gor.WithPort(9000),
 	gor.WithReadHeaderTimeout(5*time.Second),
 	gor.WithReadTimeout(15*time.Second),
 	gor.WithWriteTimeout(30*time.Second),

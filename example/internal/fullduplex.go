@@ -88,7 +88,7 @@ func RunServer() {
 		}
 	})
 
-	if err := g.Listen(":8080"); err != nil {
+	if err := g.Listen(); err != nil {
 		slog.Error("app stopped with an error", "error", err)
 	}
 

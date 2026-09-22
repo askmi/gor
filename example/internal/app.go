@@ -48,7 +48,7 @@ type (
 	}
 
 	ServerConfig struct {
-		Adr               string   `toml:"Address"`
+		Port              int      `toml:"Port"`
 		ReadTimeout       Duration `toml:"ReadTimeout"`
 		WriteTimeout      Duration `toml:"WriteTimeout"`
 		IdleTimeout       Duration `toml:"IdleTimeout"`
@@ -82,7 +82,7 @@ func (d *Duration) UnmarshalText(b []byte) error {
 // For the timeouts zero means "no limit", not "use a sane default".
 func defaultConfig() Config {
 	var c Config
-	c.Server.Adr = ":8080"
+	c.Server.Port = 8080
 	c.Server.ReadHeaderTimeout = Duration(5 * time.Second)
 	c.Server.IdleTimeout = Duration(60 * time.Second)
 	return c
@@ -97,6 +97,7 @@ func Run() {
 	}
 
 	opts := gor.NewServerOpts().
+		WithPort(cfg.Server.Port).
 		WithReadHeaderTimeout(time.Duration(cfg.Server.ReadHeaderTimeout)).
 		WithReadTimeout(time.Duration(cfg.Server.ReadTimeout)).
 		WithWriteTimeout(time.Duration(cfg.Server.WriteTimeout)).
@@ -119,16 +120,6 @@ func Run() {
 			} else {
 				slog.InfoContext(ctx, "meter provider closed")
 			}
-		}).
-		OnShutdown(func() {
-			slog.Info("start closing resource A")
-			time.Sleep(10 * time.Second)
-			slog.Info("end closing resource A")
-		}).
-		OnShutdown(func() {
-			slog.Info("start closing resource B")
-			time.Sleep(5 * time.Second)
-			slog.Info("end closing app resource B")
 		})
 
 	g.NewRouter("").
@@ -166,7 +157,7 @@ func Run() {
 		HandleHTTPFunc("GET /ws", WSHandler).
 		HandleHTTPFunc("/", DefaultHandler)
 
-	if err := g.Listen(cfg.Server.Adr); err != nil {
+	if err := g.Listen(); err != nil {
 		slog.Error("app stopped with an error", "error", err)
 	}
 }
