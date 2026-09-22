@@ -9,9 +9,12 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -71,13 +74,17 @@ func (h *H) SearchUser(ctx context.Context, req SearchUserRequest) ([]GetUserRes
 	return UserToGetUserResponse(users), nil
 }
 
+var cli = goc.NewClient(
+	goc.WithTransport(otelhttp.NewTransport(http.DefaultTransport)),
+	goc.WithTimeout(30*time.Second),
+)
+
 func DefaultHandler(w http.ResponseWriter, r *http.Request) {
 	slog.InfoContext(r.Context(), "server: not found path "+r.RequestURI)
 
-	c := goc.NewClient()
-	r, _ = http.NewRequestWithContext(r.Context(), "GET", "https://httpbin.org/get", nil)
-	resp, _ := c.Do(r)
-
+	m := strings.ToLower(r.Method)
+	r, _ = http.NewRequestWithContext(r.Context(), r.Method, "https://httpbin.org/"+m, r.Body)
+	resp, _ := cli.Do(r)
 	defer resp.Body.Close()
 	b, _ := io.ReadAll(resp.Body)
 	w.WriteHeader(404)
