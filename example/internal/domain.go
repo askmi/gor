@@ -4,10 +4,10 @@ import "time"
 
 type (
 	User struct {
-		ID       int
-		Name     string
-		Email    string
-		CreateAt time.Time
+		ID        int
+		Name      string
+		Email     string
+		CreatedAt time.Time
 	}
 )
 

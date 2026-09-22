@@ -37,10 +37,10 @@ type (
 	}
 
 	GetUserResponse struct {
-		ID       int
-		Name     string
-		Email    string
-		CreateAt time.Time
+		ID        int
+		Name      string
+		Email     string
+		CreatedAt time.Time
 	}
 
 	SearchUserRequest struct {
@@ -48,17 +48,17 @@ type (
 	}
 
 	AddUserResponse struct {
-		ID       int
-		Name     string
-		Email    string
-		CreateAt time.Time
+		ID        int
+		Name      string
+		Email     string
+		CreatedAt time.Time
 	}
 
 	EditUserResponse struct {
-		ID       int
-		Name     string
-		Email    string
-		CreateAt time.Time
+		ID        int
+		Name      string
+		Email     string
+		CreatedAt time.Time
 	}
 
 	Message struct {
@@ -146,7 +146,7 @@ func UserToGetUserResponse(users []User) []GetUserResponse {
 		resp.ID = u.ID
 		resp.Name = u.Name
 		resp.Email = u.Email
-		resp.CreateAt = u.CreateAt
+		resp.CreatedAt = u.CreatedAt
 		res[i] = resp
 	}
 

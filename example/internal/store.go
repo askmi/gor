@@ -18,7 +18,7 @@ func (s *Store) Create(ctx context.Context, u User) User {
 	s.counter++
 	u.ID = s.counter
 	s.m[u.ID] = u
-	u.CreateAt = time.Now()
+	u.CreatedAt = time.Now()
 	return u
 }
 
