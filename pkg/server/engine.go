@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"slices"
 	"sync"
 	"syscall"
 	"time"
@@ -271,17 +270,13 @@ func (e *engine) onSignal(s []os.Signal) {
 }
 
 func closeWithContext(ctx context.Context, s []func(context.Context)) {
-	if len(s) == 0 {
-		return
-	}
 	// Hooks run in reverse registration order, like deferred calls.
-	for _, f := range slices.Backward(s) {
+	for i := len(s) - 1; i >= 0; i-- {
 		if ctx.Err() != nil {
 			return
 		}
-		closeWithRecover(ctx, f)
+		closeWithRecover(ctx, s[i])
 	}
-	return
 }
 
 func closeWithRecover(ctx context.Context, f func(context.Context)) {
