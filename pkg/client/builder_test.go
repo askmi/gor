@@ -78,6 +78,37 @@ func TestNewClientOptsHoldsSuppliedOptions(t *testing.T) {
 	}
 }
 
+func TestStandaloneOptionsApplyAllSettings(t *testing.T) {
+	transport := &http.Transport{}
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatalf("cookiejar.New() error = %v", err)
+	}
+	checkRedirect := func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	client := NewClient(
+		WithTransport(transport),
+		WithCheckRedirect(checkRedirect),
+		WithCookieJar(jar),
+		WithTimeout(5*time.Second),
+	)
+
+	if client.Transport != transport {
+		t.Error("Transport was not applied")
+	}
+	if client.CheckRedirect == nil {
+		t.Error("CheckRedirect was not applied")
+	}
+	if client.Jar != jar {
+		t.Error("CookieJar was not applied")
+	}
+	if client.Timeout != 5*time.Second {
+		t.Errorf("Timeout = %v, want %v", client.Timeout, 5*time.Second)
+	}
+}
+
 func TestStandaloneOptionsComposeWithMethods(t *testing.T) {
 	checkRedirect := func(*http.Request, []*http.Request) error {
 		return http.ErrUseLastResponse
