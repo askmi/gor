@@ -22,6 +22,7 @@ type (
 	// SearchSpec describes a repository search, including its requested result window.
 	SearchSpec struct {
 		PageRequest
+		query any
 	}
 
 	// Repository defines common persistence operations for entities of type T keyed by ID.

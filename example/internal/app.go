@@ -7,22 +7,14 @@ import (
 	"os"
 	"time"
 
+	gorep "gor/pkg/repository"
 	gor "gor/pkg/server"
 
 	"github.com/BurntSushi/toml"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-// https://github.com/ixugo/goddd
-// https://www.youtube.com/watch?v=sTXc_JxmvV0&t=1506s build system
-// https://www.youtube.com/watch?v=4VSyrJI09K0 mux router
-// https://www.youtube.com/watch?v=8rnI2xLrdeM logging
-// https://www.youtube.com/watch?v=4WIhhzTTd0Y error
-// https://www.youtube.com/watch?v=kNHo788oO5Y errors v2
-// https://www.youtube.com/watch?v=IKoSsJFdRtI error wrapping https://go.dev/blog/go1.13-errors
-// https://www.youtube.com/watch?v=mfgBhGu5pco&t=38s&pp=ugUEEgJlbg%3D%3D context
-
-// https://www.youtube.com/watch?v=rWBSMsLG8po&t=2102s&pp=0gcJCRMMAYcqIYzv
+var _ gorep.Repository[User, int] = (*UserRepository)(nil)
 
 func init() {
 	// https://pkg.go.dev/log/slog
