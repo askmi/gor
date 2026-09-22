@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -buildvcs=false \
     -ldflags="-s -w -buildid=" \
     -o /out/gor-example \
-    .
+    ./cmd
 
 FROM scratch
 

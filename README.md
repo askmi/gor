@@ -260,7 +260,7 @@ Run the complete example from the repository root:
 
 ```bash
 cd example
-go run .
+go run ./cmd
 ```
 
 Then request `http://localhost:8080/api/users/42` after adapting the example's configured authentication.
@@ -754,6 +754,7 @@ gor/
 │   ├── client/                 # HTTP client package
 │   └── repository/             # Repository package
 ├── example/                    # Complete demo service (separate Go module)
+│   ├── cmd/main.go             # Program entry point
 │   ├── internal/
 │   │   ├── app.go              # Application composition
 │   │   ├── handler.go          # Typed business handlers
@@ -761,8 +762,7 @@ gor/
 │   │   └── telemetry.go        # Tracing, logging, and metrics setup
 │   ├── static/                 # Static-file example
 │   ├── Dockerfile              # Two-stage scratch image
-│   ├── go.mod
-│   └── main.go
+│   └── go.mod
 ├── docs/assets/                # Project branding
 ├── go.mod
 ├── README.md
