@@ -647,6 +647,30 @@ The middleware extracts incoming trace headers, places the span in the request c
 slog.InfoContext(ctx, "user loaded", "user_id", userID)
 ```
 
+Outgoing calls propagate the same trace because nothing in the client is framework-specific either: wrap the transport once and every request carries `traceparent`.
+
+```go
+import goc "gor/pkg/client"
+
+client := goc.NewClient(
+	goc.WithTransport(otelhttp.NewTransport(http.DefaultTransport)),
+	goc.WithTimeout(10*time.Second),
+)
+```
+
+That is the whole integration. `otelhttp`'s round tripper starts a client span from the request context and injects the headers with the globally registered propagator, so the downstream service continues the trace. Build requests with the context that carries the span:
+
+```go
+req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+if err != nil {
+	return err
+}
+
+resp, err := client.Do(req)
+```
+
+Passing `context.Background()` instead of the handler context drops the parent span, and the request then starts a new trace.
+
 [`example/internal/telemetry.go`](example/internal/telemetry.go) contains a `TraceLogHandler` that adds `trace_id`, plus a Prometheus-backed meter provider with a dedicated registry and application label. Expose its returned handler like any other native HTTP handler:
 
 ```go
