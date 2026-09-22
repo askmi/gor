@@ -69,6 +69,19 @@ func (e *engine) EnableSignals(s ...os.Signal) Engine {
 	return e
 }
 
+func (e *engine) WithGracefulPeriod(d time.Duration) Engine {
+	if d <= 0 {
+		panic("server: graceful period is not positive")
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.started {
+		panic("server: cannot set graceful period after engine start")
+	}
+	e.gracefulTimeout = d
+	return e
+}
+
 func (e *engine) OnShutdownWithContext(f func(context.Context)) Engine {
 	if f == nil {
 		panic("server: register on shutdown func is nil")
@@ -103,7 +116,7 @@ func (e *engine) Done() <-chan struct{} {
 	return e.done
 }
 
-func (e *engine) UseLogger(l *slog.Logger) {
+func (e *engine) WithLogger(l *slog.Logger) {
 	if l == nil {
 		panic("server: logger is nil")
 	}

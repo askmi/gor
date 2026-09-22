@@ -103,7 +103,7 @@ func Run() {
 		WithIdleTimeout(time.Duration(cfg.Server.IdleTimeout)).
 		WithMaxHeaderBytes(1 << 20)
 
-	g := gor.NewEngine(opts).
+	g := gor.NewEngine(opts...).
 		EnableSignals().
 		EnableProbes().
 		OnShutdownWithContext(func(ctx context.Context) {

@@ -14,7 +14,7 @@ import (
 
 func newTestEngine() Engine {
 	e := NewEngine()
-	e.UseLogger(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	e.WithLogger(slog.New(slog.NewTextHandler(io.Discard, nil)))
 	e.Route(NewRouter("/"))
 	return e
 }
@@ -154,6 +154,54 @@ func TestEngineStartReturnsListenError(t *testing.T) {
 	shutdownTestEngine(t, e)
 	if err := <-result; err != nil {
 		t.Fatalf("Listen() after releasing port error = %v", err)
+	}
+}
+
+func TestEngineWithGracefulPeriod(t *testing.T) {
+	e := NewEngine().(*engine)
+	if e.gracefulTimeout != DefaultGracefulTimeout {
+		t.Fatalf("gracefulTimeout = %v, want %v", e.gracefulTimeout, DefaultGracefulTimeout)
+	}
+
+	if e.WithGracefulPeriod(5*time.Second) != Engine(e) {
+		t.Fatal("WithGracefulPeriod() did not return the engine")
+	}
+	if e.gracefulTimeout != 5*time.Second {
+		t.Fatalf("gracefulTimeout = %v, want %v", e.gracefulTimeout, 5*time.Second)
+	}
+}
+
+func TestEngineWithGracefulPeriodRejectsNonPositive(t *testing.T) {
+	for _, d := range []time.Duration{0, -time.Second} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Fatalf("WithGracefulPeriod(%v) did not panic", d)
+				}
+			}()
+			NewEngine().WithGracefulPeriod(d)
+		}()
+	}
+}
+
+func TestEngineWithGracefulPeriodRejectsAfterStart(t *testing.T) {
+	e := newTestEngine()
+	result := make(chan error, 1)
+	go func() { result <- e.Listen(":0") }()
+	waitForEngineStart(t, e)
+
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Fatal("WithGracefulPeriod() after start did not panic")
+			}
+		}()
+		e.WithGracefulPeriod(time.Second)
+	}()
+
+	shutdownTestEngine(t, e)
+	if err := <-result; err != nil {
+		t.Fatalf("Listen() error = %v", err)
 	}
 }
 

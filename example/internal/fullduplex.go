@@ -28,7 +28,7 @@ func RunServer() {
 		WithWriteTimeout(0).
 		WithIdleTimeout(0)
 
-	g := gor.NewEngine(opts)
+	g := gor.NewEngine(opts...)
 	r := g.NewRouter("")
 	r.HandleHTTPFunc("GET /stream", func(w http.ResponseWriter, r *http.Request) {
 		// https://www.youtube.com/watch?v=-lcH3qrkh_U&t=5s
@@ -95,8 +95,9 @@ func RunServer() {
 }
 
 func RunClient() {
-	client := goc.NewClient(goc.NewClientOpts().
-		WithTimeout(0)...)
+	client := goc.NewClient(
+		goc.WithTimeout(0),
+	)
 	ch := make(chan struct{})
 	r, w := io.Pipe()
 	go func() {

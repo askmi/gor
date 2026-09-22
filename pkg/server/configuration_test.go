@@ -18,7 +18,7 @@ func TestNewEngineAppliesServerOptions(t *testing.T) {
 		WithWriteTimeout(3 * time.Second).
 		WithIdleTimeout(4 * time.Second).
 		WithMaxHeaderBytes(1 << 20)
-	e := NewEngine(opts).(*engine)
+	e := NewEngine(opts...).(*engine)
 	server := e.opts.apply(&http.Server{})
 
 	if server.ReadHeaderTimeout != time.Second {
@@ -96,12 +96,12 @@ func TestServerOptsMethods(t *testing.T) {
 	}
 }
 
-func TestNewEngineMergesServerOptions(t *testing.T) {
+func TestNewEngineAppliesLaterOptionsLast(t *testing.T) {
 	e := NewEngine(
-		NewServerOpts().WithReadTimeout(time.Second),
 		NewServerOpts().
-			WithReadTimeout(2*time.Second).
-			WithWriteTimeout(3*time.Second),
+			WithReadTimeout(time.Second).
+			WithReadTimeout(2 * time.Second).
+			WithWriteTimeout(3 * time.Second)...,
 	).(*engine)
 
 	server := e.opts.apply(&http.Server{})
@@ -110,5 +110,56 @@ func TestNewEngineMergesServerOptions(t *testing.T) {
 	}
 	if server.WriteTimeout != 3*time.Second {
 		t.Errorf("WriteTimeout = %v, want %v", server.WriteTimeout, 3*time.Second)
+	}
+}
+
+func TestStandaloneServerOptions(t *testing.T) {
+	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS13}
+
+	e := NewEngine(
+		WithReadHeaderTimeout(time.Second),
+		WithReadTimeout(2*time.Second),
+		WithWriteTimeout(3*time.Second),
+		WithIdleTimeout(4*time.Second),
+		WithMaxHeaderBytes(1<<20),
+		WithMaxHeaderValueCount(100),
+		WithDisableGeneralOptionsHandler(true),
+		WithTLSConfig(tlsConfig),
+		WithDisableClientPriority(true),
+	).(*engine)
+
+	server := e.opts.apply(&http.Server{})
+	if server.ReadHeaderTimeout != time.Second ||
+		server.ReadTimeout != 2*time.Second ||
+		server.WriteTimeout != 3*time.Second ||
+		server.IdleTimeout != 4*time.Second ||
+		server.MaxHeaderBytes != 1<<20 ||
+		server.MaxHeaderValueCount != 100 ||
+		!server.DisableGeneralOptionsHandler ||
+		server.TLSConfig != tlsConfig ||
+		!server.DisableClientPriority {
+		t.Fatalf("standalone options were not applied: %+v", server)
+	}
+}
+
+func TestNewServerOptsHoldsSuppliedOptions(t *testing.T) {
+	opts := NewServerOpts(WithReadTimeout(time.Second))
+	if len(opts) != 1 {
+		t.Fatalf("len(opts) = %d, want 1", len(opts))
+	}
+
+	if server := opts.apply(&http.Server{}); server.ReadTimeout != time.Second {
+		t.Errorf("ReadTimeout = %v, want %v", server.ReadTimeout, time.Second)
+	}
+}
+
+func TestWithOptionAppliesArbitrarySetting(t *testing.T) {
+	opts := NewServerOpts().WithOption(func(server *http.Server) *http.Server {
+		server.Addr = ":9999"
+		return server
+	})
+
+	if server := opts.apply(&http.Server{}); server.Addr != ":9999" {
+		t.Errorf("Addr = %q, want %q", server.Addr, ":9999")
 	}
 }

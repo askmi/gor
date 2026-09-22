@@ -566,13 +566,12 @@ docker build --pull -f example/Dockerfile -t gor-example:latest .
 
 ### Server shutdown
 
-`Listen` blocks for the server lifecycle. Enable managed signals and configure the shutdown timeout before constructing the engine:
+`Listen` blocks for the server lifecycle. Enable managed signals and set the shutdown period on the engine:
 
 ```go
-gor.DefaultGracefulTimeout = 25 * time.Second
-
 engine := gor.NewEngine().
 	EnableSignals(os.Interrupt, syscall.SIGTERM).
+	WithGracefulPeriod(25 * time.Second).
 	Route(router)
 
 if err := engine.Listen(":8080"); err != nil {
@@ -580,7 +579,7 @@ if err := engine.Listen(":8080"); err != nil {
 }
 ```
 
-Calling `EnableSignals()` without arguments uses interrupt and `SIGTERM`. When a configured signal arrives, the engine calls `http.Server.Shutdown` with `DefaultGracefulTimeout`; this stops new connections and gives active requests time to finish. `StopGracefully(ctx)` is available when the application owns signal handling or initiates shutdown programmatically, and `Done()` reports when serving has ended.
+Calling `EnableSignals()` without arguments uses interrupt and `SIGTERM`. When a configured signal arrives, the engine calls `http.Server.Shutdown` within the graceful period; this stops new connections and gives active requests time to finish. Engines that do not call `WithGracefulPeriod` use `DefaultGracefulTimeout`, which is a package variable applying to every engine created after it changes. `StopGracefully(ctx)` is available when the application owns signal handling or initiates shutdown programmatically, and `Done()` reports when serving has ended.
 
 In Kubernetes, set `terminationGracePeriodSeconds` longer than the engine timeout so the kubelet does not send `SIGKILL` before shutdown and cleanup finish:
 
@@ -705,17 +704,26 @@ router.Use(
 
 `ReplayBodyMiddleware` buffers the complete body in memory. Apply an application-appropriate request-size limit before it for untrusted or potentially large bodies. The engine accepts standard server timeout and header-limit options, while `Router` still implements `http.Handler` for applications that need direct control of `http.Server`.
 
-Configure the engine's underlying `http.Server` with chainable `ServerOpts`:
+Configure the engine's underlying `http.Server` by passing options directly:
+
+```go
+engine := gor.NewEngine(
+	gor.WithReadHeaderTimeout(5*time.Second),
+	gor.WithReadTimeout(15*time.Second),
+	gor.WithWriteTimeout(30*time.Second),
+	gor.WithIdleTimeout(60*time.Second),
+	gor.WithMaxHeaderBytes(1<<20),
+)
+```
+
+Every option also exists as a `ServerOpts` method, for building a configuration up before use:
 
 ```go
 serverOpts := gor.NewServerOpts().
 	WithReadHeaderTimeout(5 * time.Second).
-	WithReadTimeout(15 * time.Second).
-	WithWriteTimeout(30 * time.Second).
-	WithIdleTimeout(60 * time.Second).
-	WithMaxHeaderBytes(1 << 20)
+	WithReadTimeout(15 * time.Second)
 
-engine := gor.NewEngine(serverOpts)
+engine := gor.NewEngine(serverOpts...)
 ```
 
 TLS remains application- or ingress-managed until engine TLS configuration is implemented.

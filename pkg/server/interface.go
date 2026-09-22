@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 )
 
 type (
@@ -37,9 +38,6 @@ type (
 		// Done returns a channel closed when serving ends.
 		Done() <-chan struct{}
 
-		// UseLogger configures the engine logger before Listen.
-		// It panics if logger is nil or the engine has already started.
-		UseLogger(*slog.Logger)
 		// NewRouter creates, mounts, and returns a router.
 		NewRouter(string) *Router
 		// Route adds a router, mounting it immediately when the engine is running.
@@ -49,7 +47,22 @@ type (
 		// or for the supplied net/http ServeMux patterns. Call it before Listen.
 		EnableProbes(...string) Engine
 		EnableSignals(...os.Signal) Engine
+		// WithGracefulPeriod sets how long a signal-triggered shutdown may take,
+		// overriding DefaultGracefulTimeout. Call it before Listen.
+		// It panics if d is not positive or the engine has already started.
+		WithGracefulPeriod(time.Duration) Engine
+		// WithLogger configures the engine logger before Listen.
+		// It panics if logger is nil or the engine has already started.
+		WithLogger(*slog.Logger)
+		// OnShutdown registers a cleanup func to run once serving has ended.
+		// It panics if f is nil. See OnShutdownWithContext for the ordering and
+		// timeout rules that apply.
 		OnShutdown(func()) Engine
+		// OnShutdownWithContext registers a cleanup func to run once serving has
+		// ended, after active requests have drained. Hooks run in reverse
+		// registration order, like deferred calls, and share the graceful period
+		// with request draining: a hook is skipped once ctx is done, so long
+		// cleanup must honor cancellation. It panics if f is nil.
 		OnShutdownWithContext(func(context.Context)) Engine
 	}
 
@@ -75,17 +88,7 @@ type (
 		ContentType() string
 	}
 
-	// Option configures a value of type T.
-	Option[T any] interface {
-		apply(T) T
-	}
-	// OptionFunc adapts a function into an Option.
-	OptionFunc[T any] func(T) T
 	// ServerOpts contains HTTP server configuration.
-	ServerOpts  []OptionFunc[*http.Server]
+	ServerOpts  []func(*http.Server) *http.Server
 	RouteOption func(*routeOpts)
 )
-
-func (f OptionFunc[T]) apply(t T) T {
-	return f(t)
-}
