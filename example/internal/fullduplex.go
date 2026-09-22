@@ -16,7 +16,7 @@ type Event struct {
 }
 
 func RunFullDuplex() {
-	go RunClient(3 * time.Second)
+	go time.AfterFunc(1*time.Second, RunClient)
 	RunServer()
 }
 
@@ -94,8 +94,7 @@ func RunServer() {
 
 }
 
-func RunClient(delay time.Duration) {
-	time.Sleep(delay)
+func RunClient() {
 	client := goc.NewClient(goc.NewClientOpts().
 		WithTimeout(0))
 	ch := make(chan struct{})
