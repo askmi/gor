@@ -59,6 +59,7 @@ Your function does not import GoR or implement a framework interface. Go infers 
   - [Container CPU sizing](#container-cpu-sizing)
   - [Server shutdown](#server-shutdown)
   - [Application resource management](#application-resource-management)
+  - [Database schema migrations](#database-schema-migrations)
   - [OpenTelemetry integration](#opentelemetry-integration)
   - [HTTP resilience](#http-resilience)
   - [HTTP client and connection pool](#http-client-and-connection-pool)
@@ -622,6 +623,66 @@ engine.
 ```
 
 Hooks run in registration order. Each context-aware hook should return when `ctx.Done()` is closed; a context communicates cancellation but cannot forcibly stop a function. Use `OnShutdown(func())` only for short cleanup operations that do not accept a context.
+
+### Database schema migrations
+
+GoR has no opinion about persistence, so schema management is an ordinary application concern. The example project applies its schema with [goose](https://github.com/pressly/goose), keeping DDL out of the repository: `UserRepository` issues DML only, and the table it queries is created before it prepares a single statement.
+
+Migrations live in `example/internal/migrations/` as goose-annotated SQL:
+
+```sql
+-- +goose Up
+CREATE TABLE users (
+    id         bigserial   PRIMARY KEY,
+    name       text        NOT NULL,
+    email      text        NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- +goose Down
+DROP TABLE users;
+```
+
+`go:embed` compiles them into the binary, so a deployment always carries the schema that matches its code:
+
+```go
+//go:embed migrations/*.sql
+var migrations embed.FS
+
+func Migrate(ctx context.Context, db *sql.DB) error {
+	goose.SetBaseFS(migrations)
+	if err := goose.SetDialect(string(goose.DialectPostgres)); err != nil {
+		return fmt.Errorf("migrate dialect: %w", err)
+	}
+	if err := goose.UpContext(ctx, db, "migrations"); err != nil {
+		return fmt.Errorf("migrate up: %w", err)
+	}
+	return nil
+}
+```
+
+The example opens the pool and migrates during package initialization, where it already loads its configuration, and registers the handle with the engine so shutdown closes it:
+
+```go
+if db != nil {
+	engine.OnShutdownWithContext(func(ctx context.Context) {
+		if err := db.Close(); err != nil {
+			slog.ErrorContext(ctx, "database close failed", "error", err)
+		}
+	})
+}
+```
+
+Two settings control it, both off by default:
+
+```toml
+[database]
+dsn = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+enabled = false
+enableMigration = false
+```
+
+Running migrations at startup keeps them ahead of the listener, so a schema failure stops the release instead of surfacing as errors on requests the instance has already accepted. It suits a single instance. Several instances starting at once would race, and goose takes no lock by default, so set `enableMigration = false` and apply the schema as its own deployment step — the same embedded migrations, run once before the rollout.
 
 ### OpenTelemetry integration
 
