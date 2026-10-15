@@ -7,8 +7,9 @@ IdleTimeout = "60s"
 
 
 [database]
-dsn = "postgres"
+dsn = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 enabled = false
+enableMigration = false
 
 [cache]
 enabled=false

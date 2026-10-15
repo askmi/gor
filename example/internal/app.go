@@ -2,6 +2,9 @@ package internal
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,6 +14,7 @@ import (
 	gor "gor/pkg/server"
 
 	"github.com/BurntSushi/toml"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
@@ -34,9 +38,17 @@ func init() {
 		panic("failed to unmarshal TOML: " + err.Error())
 	}
 	slog.Info("config loaded", "config", cfg)
+
+	db, err = setupDatabase(context.Background(), cfg.Database)
+	if err != nil {
+		panic("failed to set up database: " + err.Error())
+	}
 }
 
 var cfg Config
+
+// db is nil while the database is disabled; every user of it must check.
+var db *sql.DB
 
 const AppName = "gor-example-service"
 
@@ -58,6 +70,10 @@ type (
 	DatabaseConfig struct {
 		DSN     string `toml:"dsn"`
 		Enabled bool   `toml:"enabled"`
+		// EnableMigration runs the pending migrations during startup. Turn it
+		// off to apply the schema as a separate deployment step instead, which
+		// is what several instances starting at once require.
+		EnableMigration bool `toml:"enableMigration"`
 	}
 
 	CacheConfig struct {
@@ -86,6 +102,40 @@ func defaultConfig() Config {
 	c.Server.ReadHeaderTimeout = Duration(5 * time.Second)
 	c.Server.IdleTimeout = Duration(60 * time.Second)
 	return c
+}
+
+// setupDatabase opens the pool and brings the schema up to date. It returns a
+// nil handle when the database is disabled, leaving nothing to close.
+//
+// The migration is DDL, and the repository issues DML only, so the schema is
+// created here, before the first statement is prepared against it. Running it
+// in init also keeps it ahead of the listener: a schema failure stops the
+// release rather than surfacing on requests the instance already accepted.
+//
+// sql.Open is lazy, so Ping is what actually proves the DSN and the server; the
+// migration would report the same failure, but only when migrations are on.
+func setupDatabase(ctx context.Context, c DatabaseConfig) (*sql.DB, error) {
+	if !c.Enabled {
+		slog.InfoContext(ctx, "database is disabled")
+		return nil, nil
+	}
+
+	db, err := sql.Open("pgx", c.DSN)
+	if err != nil {
+		return nil, fmt.Errorf("open database: %w", err)
+	}
+	if err := db.PingContext(ctx); err != nil {
+		return nil, errors.Join(fmt.Errorf("ping database: %w", err), db.Close())
+	}
+
+	if !c.EnableMigration {
+		slog.InfoContext(ctx, "database migration is disabled")
+		return db, nil
+	}
+	if err := Migrate(ctx, db); err != nil {
+		return nil, errors.Join(err, db.Close())
+	}
+	return db, nil
 }
 
 func Run() {
@@ -121,6 +171,16 @@ func Run() {
 				slog.InfoContext(ctx, "meter provider closed")
 			}
 		})
+
+	if db != nil {
+		g.OnShutdownWithContext(func(ctx context.Context) {
+			if err := db.Close(); err != nil {
+				slog.ErrorContext(ctx, "database close failed", "error", err)
+			} else {
+				slog.InfoContext(ctx, "database closed")
+			}
+		})
+	}
 
 	g.NewRouter("").
 		HandleHTTP("GET /metrics", metricsHandler).
