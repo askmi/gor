@@ -1,15 +1,12 @@
 package gor
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"net/http"
 	"strings"
 )
 
 type (
-	routerKey          struct{}
 	securityContextKey struct{}
 )
 
@@ -84,28 +81,6 @@ func GetStatusCode(w http.ResponseWriter) (int, bool) {
 	return sw.StatusCode, true
 }
 
-// DecodeBasic decodes a base64-encoded Basic credentials payload into username and password.
-// It returns false when the payload is empty, invalid, or lacks a non-empty password.
-func DecodeBasic(raw []byte) ([]byte, []byte, bool) {
-	if len(raw) == 0 {
-		return nil, nil, false
-	}
-
-	decoded := make([]byte, base64.StdEncoding.DecodedLen(len(raw)))
-	n, err := base64.StdEncoding.Decode(decoded, raw)
-	if err != nil {
-		return nil, nil, false
-	}
-	decoded = decoded[:n]
-
-	i := bytes.Index(decoded, []byte{':'})
-	if i < 0 || i+1 >= len(decoded) {
-		return nil, nil, false
-	}
-
-	return decoded[:i], decoded[i+1:], true
-}
-
 // Unwrap returns cause i from an error implementing Unwrap() []error.
 // It returns nil for a non-multi-error or an out-of-range index.
 func Unwrap(err error, i int) error {
@@ -125,19 +100,6 @@ func Unwrap(err error, i int) error {
 	}
 
 	return causes[i]
-}
-
-// and returns independent options containing o followed by a.
-func Merge[E ~[]T, T any](e ...E) E {
-	cap := 0
-	for i, _ := range e {
-		cap += len(e[i])
-	}
-	opts := make([]T, 0, cap)
-	for i, _ := range e {
-		opts = append(opts, e[i]...)
-	}
-	return opts
 }
 
 func WithElement[E ~[]T, T any](a E, e T) E {

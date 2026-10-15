@@ -2,8 +2,8 @@ package internal
 
 import (
 	"encoding/json"
-	goc "gor/pkg/client"
-	gor "gor/pkg/server"
+	goc "github.com/askmi/gor/pkg/client"
+	gor "github.com/askmi/gor/pkg/server"
 	"io"
 	"log/slog"
 	"net/http"

@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id         bigserial   PRIMARY KEY,
     name       text        NOT NULL,
     email      text        NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE users (
 
 -- Lookups by email are the application's only non-key access path, and the
 -- address identifies the user, so the index enforces uniqueness as well.
-CREATE UNIQUE INDEX users_email_key ON users (lower(email));
+CREATE UNIQUE INDEX users_email_key ON users (email);
 
 -- +goose Down
-DROP TABLE users;
+DROP TABLE IF EXISTS users CASCADE;

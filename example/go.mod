@@ -4,6 +4,7 @@ go 1.27
 
 require (
 	github.com/BurntSushi/toml v1.6.0
+	github.com/askmi/gor v0.0.0
 	github.com/coder/websocket v1.8.15
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/pressly/goose/v3 v3.28.0
@@ -16,7 +17,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.46.0
 	go.opentelemetry.io/otel/sdk/metric v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
-	gor v0.0.0
 )
 
 require (
@@ -43,4 +43,4 @@ require (
 	google.golang.org/protobuf v1.36.12 // indirect
 )
 
-replace gor => ..
+replace github.com/askmi/gor => ..

@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-
-	gor "gor/pkg/server"
 )
 
 // https://go.dev/src/net/http/transport.go
@@ -104,138 +102,138 @@ func NewTransportOpts(options ...func(*http.Transport) *http.Transport) Transpor
 
 // WithOption appends an arbitrary option, for settings without a dedicated method.
 func (o TransportOpts) WithOption(option func(*http.Transport) *http.Transport) TransportOpts {
-	return gor.WithElement(o, option)
+	return WithElement(o, option)
 }
 
 // WithMaxIdleConns sets the total number of idle connections kept across all
 // hosts. Zero means no limit.
 func (o TransportOpts) WithMaxIdleConns(n int) TransportOpts {
-	return gor.WithElement(o, WithMaxIdleConns(n))
+	return WithElement(o, WithMaxIdleConns(n))
 }
 
 // WithMaxIdleConnsPerHost sets the number of idle connections kept per host.
 // Zero selects http.DefaultMaxIdleConnsPerHost, which is 2.
 func (o TransportOpts) WithMaxIdleConnsPerHost(n int) TransportOpts {
-	return gor.WithElement(o, WithMaxIdleConnsPerHost(n))
+	return WithElement(o, WithMaxIdleConnsPerHost(n))
 }
 
 // WithMaxConnsPerHost sets the total number of connections per host, counting
 // dialing, active and idle ones. Zero means no limit.
 func (o TransportOpts) WithMaxConnsPerHost(n int) TransportOpts {
-	return gor.WithElement(o, WithMaxConnsPerHost(n))
+	return WithElement(o, WithMaxConnsPerHost(n))
 }
 
 // WithIdleConnTimeout sets how long an idle connection is kept before closing.
 // Zero means no limit.
 func (o TransportOpts) WithIdleConnTimeout(timeout time.Duration) TransportOpts {
-	return gor.WithElement(o, WithIdleConnTimeout(timeout))
+	return WithElement(o, WithIdleConnTimeout(timeout))
 }
 
 // WithDisableKeepAlives disables connection reuse, closing each connection
 // after a single request.
 func (o TransportOpts) WithDisableKeepAlives(disable bool) TransportOpts {
-	return gor.WithElement(o, WithDisableKeepAlives(disable))
+	return WithElement(o, WithDisableKeepAlives(disable))
 }
 
 // WithDisableCompression stops the transport from requesting gzip encoding.
 func (o TransportOpts) WithDisableCompression(disable bool) TransportOpts {
-	return gor.WithElement(o, WithDisableCompression(disable))
+	return WithElement(o, WithDisableCompression(disable))
 }
 
 // WithDialContext sets the function that establishes unencrypted connections.
 func (o TransportOpts) WithDialContext(dial func(context.Context, string, string) (net.Conn, error)) TransportOpts {
-	return gor.WithElement(o, WithDialContext(dial))
+	return WithElement(o, WithDialContext(dial))
 }
 
 // WithDialTLSContext sets the function that establishes TLS connections,
 // bypassing TLSClientConfig and TLSHandshakeTimeout when set.
 func (o TransportOpts) WithDialTLSContext(dial func(context.Context, string, string) (net.Conn, error)) TransportOpts {
-	return gor.WithElement(o, WithDialTLSContext(dial))
+	return WithElement(o, WithDialTLSContext(dial))
 }
 
 // WithTLSClientConfig sets the TLS configuration used for HTTPS requests.
 func (o TransportOpts) WithTLSClientConfig(config *tls.Config) TransportOpts {
-	return gor.WithElement(o, WithTLSClientConfig(config))
+	return WithElement(o, WithTLSClientConfig(config))
 }
 
 // WithTLSHandshakeTimeout sets the TLS handshake timeout. Zero means no limit.
 func (o TransportOpts) WithTLSHandshakeTimeout(timeout time.Duration) TransportOpts {
-	return gor.WithElement(o, WithTLSHandshakeTimeout(timeout))
+	return WithElement(o, WithTLSHandshakeTimeout(timeout))
 }
 
 // WithTLSNextProto sets the negotiated-protocol handlers for TLS connections.
 // A non-nil map disables HTTP/2 unless it contains an "h2" entry.
 func (o TransportOpts) WithTLSNextProto(next map[string]func(string, *tls.Conn) http.RoundTripper) TransportOpts {
-	return gor.WithElement(o, WithTLSNextProto(next))
+	return WithElement(o, WithTLSNextProto(next))
 }
 
 // WithResponseHeaderTimeout limits the wait for response headers after the
 // request body is written. Zero means no limit.
 func (o TransportOpts) WithResponseHeaderTimeout(timeout time.Duration) TransportOpts {
-	return gor.WithElement(o, WithResponseHeaderTimeout(timeout))
+	return WithElement(o, WithResponseHeaderTimeout(timeout))
 }
 
 // WithExpectContinueTimeout limits the wait for a 100-continue response when
 // the request carries an Expect: 100-continue header. Zero means no limit.
 func (o TransportOpts) WithExpectContinueTimeout(timeout time.Duration) TransportOpts {
-	return gor.WithElement(o, WithExpectContinueTimeout(timeout))
+	return WithElement(o, WithExpectContinueTimeout(timeout))
 }
 
 // WithMaxResponseHeaderBytes sets the maximum response-header size.
 // Zero selects the 10 MB default.
 func (o TransportOpts) WithMaxResponseHeaderBytes(bytes int64) TransportOpts {
-	return gor.WithElement(o, WithMaxResponseHeaderBytes(bytes))
+	return WithElement(o, WithMaxResponseHeaderBytes(bytes))
 }
 
 // WithReadBufferSize sets the read buffer size used per connection.
 // Zero selects the 4 KB default.
 func (o TransportOpts) WithReadBufferSize(size int) TransportOpts {
-	return gor.WithElement(o, WithReadBufferSize(size))
+	return WithElement(o, WithReadBufferSize(size))
 }
 
 // WithWriteBufferSize sets the write buffer size used per connection.
 // Zero selects the 4 KB default.
 func (o TransportOpts) WithWriteBufferSize(size int) TransportOpts {
-	return gor.WithElement(o, WithWriteBufferSize(size))
+	return WithElement(o, WithWriteBufferSize(size))
 }
 
 // WithProxy sets the function returning the proxy to use for a request.
 // A nil URL means no proxy.
 func (o TransportOpts) WithProxy(proxy func(*http.Request) (*url.URL, error)) TransportOpts {
-	return gor.WithElement(o, WithProxy(proxy))
+	return WithElement(o, WithProxy(proxy))
 }
 
 // WithProxyConnectHeader sets the headers sent to a proxy during CONNECT.
 func (o TransportOpts) WithProxyConnectHeader(header http.Header) TransportOpts {
-	return gor.WithElement(o, WithProxyConnectHeader(header))
+	return WithElement(o, WithProxyConnectHeader(header))
 }
 
 // WithGetProxyConnectHeader sets the function returning the headers sent to a
 // proxy during CONNECT, taking precedence over WithProxyConnectHeader.
 func (o TransportOpts) WithGetProxyConnectHeader(get func(context.Context, *url.URL, string) (http.Header, error)) TransportOpts {
-	return gor.WithElement(o, WithGetProxyConnectHeader(get))
+	return WithElement(o, WithGetProxyConnectHeader(get))
 }
 
 // WithOnProxyConnectResponse sets the hook called with the proxy's CONNECT
 // response. A non-nil error fails the request.
 func (o TransportOpts) WithOnProxyConnectResponse(f func(context.Context, *url.URL, *http.Request, *http.Response) error) TransportOpts {
-	return gor.WithElement(o, WithOnProxyConnectResponse(f))
+	return WithElement(o, WithOnProxyConnectResponse(f))
 }
 
 // WithForceAttemptHTTP2 enables HTTP/2 even when a custom dialer or TLS
 // configuration is set.
 func (o TransportOpts) WithForceAttemptHTTP2(force bool) TransportOpts {
-	return gor.WithElement(o, WithForceAttemptHTTP2(force))
+	return WithElement(o, WithForceAttemptHTTP2(force))
 }
 
 // WithHTTP2 sets the HTTP/2 configuration.
 func (o TransportOpts) WithHTTP2(config *http.HTTP2Config) TransportOpts {
-	return gor.WithElement(o, WithHTTP2(config))
+	return WithElement(o, WithHTTP2(config))
 }
 
 // WithProtocols sets the protocols the transport may use.
 func (o TransportOpts) WithProtocols(protocols *http.Protocols) TransportOpts {
-	return gor.WithElement(o, WithProtocols(protocols))
+	return WithElement(o, WithProtocols(protocols))
 }
 
 // WithMaxIdleConns sets the total number of idle connections kept across all

@@ -3,8 +3,6 @@ package client
 import (
 	"net/http"
 	"time"
-
-	gor "gor/pkg/server"
 )
 
 // https://go.dev/src/net/http/client.go
@@ -67,34 +65,34 @@ func NewClientOpts(options ...func(*http.Client) *http.Client) ClientOpts {
 
 // WithOption appends an arbitrary option, for settings without a dedicated method.
 func (o ClientOpts) WithOption(option func(*http.Client) *http.Client) ClientOpts {
-	return gor.WithElement(o, option)
+	return WithElement(o, option)
 }
 
 // WithTransport sets the client's HTTP transport.
 func (o ClientOpts) WithTransport(transport http.RoundTripper) ClientOpts {
-	return gor.WithElement(o, WithTransport(transport))
+	return WithElement(o, WithTransport(transport))
 }
 
 // WithTransportOpts sets the client's HTTP transport, built from the supplied
 // transport options over a clone of http.DefaultTransport. Use WithTransport
 // instead to supply a transport built elsewhere, such as an instrumented one.
 func (o ClientOpts) WithTransportOpts(options ...func(*http.Transport) *http.Transport) ClientOpts {
-	return gor.WithElement(o, WithTransportOpts(options...))
+	return WithElement(o, WithTransportOpts(options...))
 }
 
 // WithCheckRedirect sets the client's redirect policy.
 func (o ClientOpts) WithCheckRedirect(check func(*http.Request, []*http.Request) error) ClientOpts {
-	return gor.WithElement(o, WithCheckRedirect(check))
+	return WithElement(o, WithCheckRedirect(check))
 }
 
 // WithCookieJar sets the client's cookie jar.
 func (o ClientOpts) WithCookieJar(jar http.CookieJar) ClientOpts {
-	return gor.WithElement(o, WithCookieJar(jar))
+	return WithElement(o, WithCookieJar(jar))
 }
 
 // WithTimeout sets the total request timeout.
 func (o ClientOpts) WithTimeout(timeout time.Duration) ClientOpts {
-	return gor.WithElement(o, WithTimeout(timeout))
+	return WithElement(o, WithTimeout(timeout))
 }
 
 // WithTransport sets the client's HTTP transport.

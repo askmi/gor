@@ -1,7 +1,9 @@
 package internal
 
 import (
-	gor "gor/pkg/server"
+	"bytes"
+	"encoding/base64"
+	gor "github.com/askmi/gor/pkg/server"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -13,7 +15,7 @@ func UsernamePasswordAutenticator(u string) gor.Authenticator {
 		if !ok {
 			return gor.Rejected("no identity"), nil
 		}
-		user, p, ok := gor.DecodeBasic(b)
+		user, p, ok := decodeBasic(b)
 		if !ok {
 			return gor.Rejected("invalid credentials"), nil
 		}
@@ -23,6 +25,18 @@ func UsernamePasswordAutenticator(u string) gor.Authenticator {
 		}
 		return gor.Authenticated(string(user), Principal{Username: string(user), Roles: []string{"user", "admin"}}), nil
 	}
+}
+
+func decodeBasic(raw []byte) ([]byte, []byte, bool) {
+	decoded, err := base64.StdEncoding.DecodeString(string(raw))
+	if err != nil {
+		return nil, nil, false
+	}
+	user, password, ok := bytes.Cut(decoded, []byte{':'})
+	if !ok || len(password) == 0 {
+		return nil, nil, false
+	}
+	return user, password, true
 }
 
 func Authorize(role string) gor.HTTPMiddleware {

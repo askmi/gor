@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	gor "gor/pkg/server"
+	gor "github.com/askmi/gor/pkg/server"
 	"strings"
 	"time"
 )

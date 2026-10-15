@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	gor "gor/pkg/repository"
+	gor "github.com/askmi/gor/pkg/repository"
 )
 
 const (

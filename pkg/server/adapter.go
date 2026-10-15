@@ -156,6 +156,12 @@ func DefaultRequestHandler(_ context.Context, req *http.Request, v any) error { 
 }
 
 func DefaultErrorHandler(_ context.Context, err error) HTTPResponse {
+	// if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+	// 	return simpleHTTPResponse{
+	// 		statusCode: http.StatusRequestEntityTooLarge,
+	// 		content:    []byte(err.Error()),
+	// 	}
+	// }
 	return simpleHTTPResponse{
 		statusCode: http.StatusInternalServerError,
 		content:    []byte(err.Error()),

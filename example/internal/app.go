@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	gorep "gor/pkg/repository"
-	gor "gor/pkg/server"
+	gorep "github.com/askmi/gor/pkg/repository"
+	gor "github.com/askmi/gor/pkg/server"
 
 	"github.com/BurntSushi/toml"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -60,11 +60,11 @@ type (
 	}
 
 	ServerConfig struct {
-		Port              int      `toml:"Port"`
-		ReadTimeout       Duration `toml:"ReadTimeout"`
-		WriteTimeout      Duration `toml:"WriteTimeout"`
-		IdleTimeout       Duration `toml:"IdleTimeout"`
-		ReadHeaderTimeout Duration `toml:"ReadHeaderTimeout"`
+		Port              int           `toml:"Port"`
+		ReadTimeout       time.Duration `toml:"ReadTimeout"`
+		WriteTimeout      time.Duration `toml:"WriteTimeout"`
+		IdleTimeout       time.Duration `toml:"IdleTimeout"`
+		ReadHeaderTimeout time.Duration `toml:"ReadHeaderTimeout"`
 	}
 
 	DatabaseConfig struct {
@@ -79,28 +79,15 @@ type (
 	CacheConfig struct {
 		Enabled bool `toml:"enabled"`
 	}
-
-	// Duration reads a TOML string such as "5s" or "1m" into a time.Duration.
-	// TOML has no duration type, so the value arrives as text.
-	Duration time.Duration
 )
-
-func (d *Duration) UnmarshalText(b []byte) error {
-	v, err := time.ParseDuration(string(b))
-	if err != nil {
-		return err
-	}
-	*d = Duration(v)
-	return nil
-}
 
 // defaultConfig seeds values that TOML omission would otherwise leave at zero.
 // For the timeouts zero means "no limit", not "use a sane default".
 func defaultConfig() Config {
 	var c Config
 	c.Server.Port = 8080
-	c.Server.ReadHeaderTimeout = Duration(5 * time.Second)
-	c.Server.IdleTimeout = Duration(60 * time.Second)
+	c.Server.ReadHeaderTimeout = 5 * time.Second
+	c.Server.IdleTimeout = 60 * time.Second
 	return c
 }
 
@@ -148,10 +135,10 @@ func Run() {
 
 	opts := gor.NewServerOpts().
 		WithPort(cfg.Server.Port).
-		WithReadHeaderTimeout(time.Duration(cfg.Server.ReadHeaderTimeout)).
-		WithReadTimeout(time.Duration(cfg.Server.ReadTimeout)).
-		WithWriteTimeout(time.Duration(cfg.Server.WriteTimeout)).
-		WithIdleTimeout(time.Duration(cfg.Server.IdleTimeout)).
+		WithReadHeaderTimeout(cfg.Server.ReadHeaderTimeout).
+		WithReadTimeout(cfg.Server.ReadTimeout).
+		WithWriteTimeout(cfg.Server.WriteTimeout).
+		WithIdleTimeout(cfg.Server.IdleTimeout).
 		WithMaxHeaderBytes(1 << 20)
 
 	g := gor.NewEngine(opts...).

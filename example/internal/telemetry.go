@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	gor "gor/pkg/server"
+	gor "github.com/askmi/gor/pkg/server"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

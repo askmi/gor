@@ -3,7 +3,7 @@ package internal
 import (
 	"encoding/json"
 	"errors"
-	gor "gor/pkg/server"
+	gor "github.com/askmi/gor/pkg/server"
 	"io"
 	"net/http"
 	"strconv"
